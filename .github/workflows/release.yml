@@ -225,34 +225,102 @@ jobs:
             --skip-duplicate
 
   # ---------------------------------------------------------------------------
-  # Fill the Scoop/winget manifests with the released version + hash and commit
-  # them back to the default branch.
+  # Publish the Scoop manifest to the bucket repository.
+  #
+  # A Scoop bucket IS a git repository that Scoop clones, so the manifest is a
+  # distribution artifact rather than source code. It is generated here from the
+  # real release hash and pushed to the bucket repo -- never committed back into
+  # this repository.
+  #
+  # Requires a SCOOP_BUCKET_TOKEN secret (a PAT with `contents: write` on the
+  # bucket repo); the job is skipped when the secret is absent.
   # ---------------------------------------------------------------------------
-  manifests:
+  scoop:
     needs: [version, release]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.repository.default_branch }}
-
-      - name: Update manifests
-        shell: pwsh
-        run: >
-          ./scripts/Update-Manifests.ps1
-          -Version '${{ needs.version.outputs.value }}'
-          -Sha256 '${{ needs.release.outputs.win_sha256 }}'
-          -Owner '${{ github.repository_owner }}'
-
-      - name: Commit manifests
+      - name: Check for token
+        id: guard
+        env:
+          TOKEN: ${{ secrets.SCOOP_BUCKET_TOKEN }}
         shell: bash
         run: |
-          if [ -z "$(git status --porcelain packaging)" ]; then
-            echo "Manifests already up to date; nothing to commit."
+          if [ -z "$TOKEN" ]; then
+            echo "::warning::SCOOP_BUCKET_TOKEN is not set; skipping Scoop bucket update."
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout kaniff (for the update script)
+        if: steps.guard.outputs.enabled == 'true'
+        uses: actions/checkout@v4
+        with:
+          path: kaniff
+
+      - name: Checkout bucket
+        if: steps.guard.outputs.enabled == 'true'
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository_owner }}/scoop-kaniff
+          token: ${{ secrets.SCOOP_BUCKET_TOKEN }}
+          path: bucket
+
+      - name: Generate manifest
+        if: steps.guard.outputs.enabled == 'true'
+        shell: pwsh
+        run: |
+          ./kaniff/scripts/Update-Manifests.ps1 `
+            -Version '${{ needs.version.outputs.value }}' `
+            -Sha256 '${{ needs.release.outputs.win_sha256 }}' `
+            -Owner '${{ github.repository_owner }}'
+          New-Item -ItemType Directory -Force -Path bucket/bucket | Out-Null
+          Copy-Item kaniff/packaging/scoop/kaniff.json bucket/bucket/kaniff.json -Force
+
+      - name: Push to bucket
+        if: steps.guard.outputs.enabled == 'true'
+        working-directory: bucket
+        shell: bash
+        run: |
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "Bucket already up to date."
             exit 0
           fi
           git config user.name  'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add packaging
-          git commit -m "chore: update packaging manifests for v${{ needs.version.outputs.value }}"
+          git add .
+          git commit -m "kaniff: update to ${{ needs.version.outputs.value }}"
           git push
+
+  # ---------------------------------------------------------------------------
+  # Submit the release to microsoft/winget-pkgs as a pull request.
+  #
+  # Requires a WINGET_TOKEN secret (a classic PAT with `public_repo`) because the
+  # action has to fork and push to microsoft/winget-pkgs on your behalf.
+  # ---------------------------------------------------------------------------
+  winget:
+    needs: [version, release]
+    runs-on: ubuntu-latest
+    steps:
+      # The `secrets` context cannot be used in a job-level `if`, so guard here.
+      - name: Check for token
+        id: guard
+        env:
+          TOKEN: ${{ secrets.WINGET_TOKEN }}
+        shell: bash
+        run: |
+          if [ -z "$TOKEN" ]; then
+            echo "::warning::WINGET_TOKEN is not set; skipping winget submission."
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Submit to winget-pkgs
+        if: steps.guard.outputs.enabled == 'true'
+        uses: vedantmgoyal9/winget-releaser@main
+        with:
+          identifier: Kaniff.Kaniff
+          version: ${{ needs.version.outputs.value }}
+          installers-regex: '-win-x64\.zip$'
+          token: ${{ secrets.WINGET_TOKEN }}

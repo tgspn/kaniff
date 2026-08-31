@@ -154,13 +154,18 @@ Everything is automated. Push a tag and the
 1. Build the CLI and desktop app for 5 platforms (self-contained, single file).
 2. Pack the CLI as a `dotnet tool` and push it to NuGet.
 3. Publish a GitHub release with all archives and a `SHA256SUMS.txt`.
-4. Rewrite the Scoop/winget manifests with the new version and hash, and commit
-   them back to `main`.
+4. Generate the Scoop manifest from the real hash and push it to the bucket repo.
+5. Open a pull request against `microsoft/winget-pkgs`.
 
 ```bash
 git tag v0.1.0
 git push origin v0.1.0
 ```
+
+Steps 2, 4 and 5 are skipped with a warning when their secrets
+(`NUGET_API_KEY`, `SCOOP_BUCKET_TOKEN`, `WINGET_TOKEN`) are not configured.
+See [packaging/README.md](packaging/README.md) for why the manifests live
+outside this repository.
 
 ## Roadmap
 

@@ -2,17 +2,35 @@
 
 Manifests to distribute the Kaniff CLI.
 
-## These files update themselves
+## These files are templates, not the published manifests
 
-You do **not** need to edit the version, the download URL, or the SHA-256 by hand.
-When a `vX.Y.Z` tag is pushed, [.github/workflows/release.yml](../.github/workflows/release.yml)
-builds the archives, computes the hashes, and the `manifests` job runs
-[`scripts/Update-Manifests.ps1`](../scripts/Update-Manifests.ps1) to rewrite these
-files and commit them back to `main`.
+The version, URL and `REPLACE_WITH_SHA256` placeholders in this folder are
+**never** filled in on `main`. A package hash describes a *published artifact*,
+not the source code, so it does not belong in this repository's history — and it
+cannot be known before the release exists anyway (the `.zip` is not reproducible
+byte-for-byte, even though the binaries inside it are).
 
-`REPLACE_WITH_SHA256` is only a placeholder until the very first release.
+Instead, [.github/workflows/release.yml](../.github/workflows/release.yml) runs
+[`scripts/Update-Manifests.ps1`](../scripts/Update-Manifests.ps1) *after* the
+archives are built, using the real hash, and delivers the result to where each
+package manager actually reads it:
 
-To update them manually (for example after a hand-made release):
+| Manifest | Published to | Secret required |
+| --- | --- | --- |
+| `scoop/kaniff.json` | the `scoop-kaniff` bucket repository | `SCOOP_BUCKET_TOKEN` |
+| `winget/*.yaml` | a PR to `microsoft/winget-pkgs` | `WINGET_TOKEN` |
+
+Both jobs are skipped with a warning when the secret is not configured, so the
+release still succeeds without them.
+
+### Why Scoop needs a separate repository
+
+A Scoop bucket *is* a git repository. `scoop update` does a `git pull` on the
+bucket and reads the JSON from the working tree, which makes the manifest a
+distribution channel rather than a build input — the same role a `.nupkg` plays
+for NuGet. Keeping it in its own repo is what lets `main` stay protected.
+
+### Running the generator manually
 
 ```powershell
 # From a local archive - the hash is computed for you
