@@ -57,7 +57,11 @@ jobs:
           - os: macos-latest
             rid: osx-arm64
             archive: tar
-          - os: macos-13
+          # macos-13 was the last Intel image on the plain macOS line; it was
+          # retired in December 2025, and jobs targeting it now sit in the queue
+          # forever instead of failing. macos-15-intel replaces it and is
+          # available until August 2027, when Actions drops x86_64 entirely.
+          - os: macos-15-intel
             rid: osx-x64
             archive: tar
 
