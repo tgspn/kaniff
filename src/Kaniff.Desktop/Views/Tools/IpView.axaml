@@ -1,29 +1,45 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Kaniff.Desktop.ViewModels.Tools"
+             xmlns:c="using:Kaniff.Desktop.Controls"
              x:Class="Kaniff.Desktop.Views.Tools.IpView"
-             x:DataType="vm:IpViewModel">
+             x:DataType="vm:IpViewModel"
+             x:CompileBindings="True">
     <StackPanel Spacing="12">
         <TextBlock Text="{Binding Title}" FontSize="22" FontWeight="Bold" />
         <TextBlock Text="{Binding Description}" Opacity="0.7" />
 
         <Border Background="#2A2A33" CornerRadius="8" Padding="16">
             <StackPanel Spacing="10">
-                <StackPanel Spacing="2">
-                    <TextBlock Text="Public IPv4" Opacity="0.6" FontSize="12" />
-                    <SelectableTextBlock Text="{Binding PublicIpV4}"
-                                         FontSize="24" FontWeight="Bold"
-                                         TextWrapping="Wrap" />
-                </StackPanel>
-                <StackPanel Spacing="2">
-                    <TextBlock Text="Public IPv6" Opacity="0.6" FontSize="12" />
-                    <!-- Smaller: a full v6 address is 39 characters and would
-                         otherwise wrap awkwardly at the window's default width. -->
-                    <SelectableTextBlock Text="{Binding PublicIpV6}"
-                                         FontSize="16" FontWeight="Bold"
-                                         FontFamily="Consolas,monospace"
-                                         TextWrapping="Wrap" />
-                </StackPanel>
+                <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel Spacing="2">
+                        <TextBlock Text="Public IPv4" Opacity="0.6" FontSize="12" />
+                        <SelectableTextBlock Text="{Binding PublicIpV4}"
+                                             FontSize="24" FontWeight="Bold"
+                                             TextWrapping="Wrap" />
+                    </StackPanel>
+                    <!-- Disabled while loading or when there is no address, so the
+                         button never puts "not available" on the clipboard. -->
+                    <c:CopyButton Grid.Column="1"
+                                  Text="{Binding PublicIpV4}"
+                                  IsEnabled="{Binding HasPublicIpV4}"
+                                  VerticalAlignment="Center" />
+                </Grid>
+                <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel Spacing="2">
+                        <TextBlock Text="Public IPv6" Opacity="0.6" FontSize="12" />
+                        <!-- Smaller: a full v6 address is 39 characters and would
+                             otherwise wrap awkwardly at the window's default width. -->
+                        <SelectableTextBlock Text="{Binding PublicIpV6}"
+                                             FontSize="16" FontWeight="Bold"
+                                             FontFamily="Consolas,monospace"
+                                             TextWrapping="Wrap" />
+                    </StackPanel>
+                    <c:CopyButton Grid.Column="1"
+                                  Text="{Binding PublicIpV6}"
+                                  IsEnabled="{Binding HasPublicIpV6}"
+                                  VerticalAlignment="Center" />
+                </Grid>
                 <TextBlock Text="{Binding PublicSource}" Opacity="0.5" FontSize="11" TextWrapping="Wrap" />
             </StackPanel>
         </Border>
@@ -31,8 +47,15 @@
         <TextBlock Text="Local addresses" Opacity="0.6" FontSize="12" />
         <ItemsControl ItemsSource="{Binding LocalAddresses}">
             <ItemsControl.ItemTemplate>
-                <DataTemplate>
-                    <SelectableTextBlock Text="{Binding}" FontFamily="Consolas,monospace" Margin="0,2" />
+                <DataTemplate x:DataType="vm:LocalAddressItem">
+                    <Grid ColumnDefinitions="*,Auto" Margin="0,2">
+                        <SelectableTextBlock Text="{Binding Display}"
+                                             FontFamily="Consolas,monospace"
+                                             VerticalAlignment="Center" />
+                        <!-- Copies the bare address, not the annotated line: pasting
+                             "(IPv4, Ethernet)" into a terminal helps nobody. -->
+                        <c:CopyButton Grid.Column="1" Text="{Binding Address}" />
+                    </Grid>
                 </DataTemplate>
             </ItemsControl.ItemTemplate>
         </ItemsControl>
