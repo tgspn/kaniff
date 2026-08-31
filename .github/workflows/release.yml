@@ -378,5 +378,8 @@ jobs:
           # Explicit because github.ref_name is the branch, not a tag, when the
           # workflow is started manually.
           release-tag: v${{ needs.version.outputs.value }}
-          installers-regex: '-win-x64\.zip$'
+          # Anchored on `kaniff-<version>-`: a bare `-win-x64\.zip$` also matches
+          # kaniff-desktop-<version>-win-x64.zip, and the two archives would be
+          # submitted as two installers for the same package.
+          installers-regex: '^kaniff-${{ needs.version.outputs.value }}-win-x64\.zip$'
           token: ${{ secrets.WINGET_TOKEN }}
