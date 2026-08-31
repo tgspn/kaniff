@@ -196,6 +196,9 @@ jobs:
       - name: Publish release
         uses: softprops/action-gh-release@v2
         with:
+          # Explicit because the action defaults to github.ref, which is the
+          # branch rather than a tag when the workflow is started manually.
+          tag_name: v${{ needs.version.outputs.value }}
           draft: false
           generate_release_notes: true
           files: dist/*
