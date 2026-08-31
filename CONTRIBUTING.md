@@ -34,7 +34,8 @@ dotnet run --project src/Kaniff.Desktop
 | `src/Kaniff.Cli` | Command-line front end (`kaniff`). |
 | `src/Kaniff.Desktop` | Avalonia desktop front end. |
 | `tests/Kaniff.Tests` | xUnit tests for `Kaniff.Core`. |
-| `packaging/` | Scoop and winget manifests. |
+| `packaging/` | Scoop and winget manifests (updated automatically on release). |
+| `scripts/` | Release helper scripts. |
 
 ## Adding a new tool
 

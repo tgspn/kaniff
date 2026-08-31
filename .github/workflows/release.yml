@@ -4,13 +4,62 @@ on:
   push:
     tags:
       - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to build (without the leading v), e.g. 0.1.0'
+        required: true
 
 permissions:
   contents: write
 
 jobs:
-  release:
-    runs-on: windows-latest
+  # ---------------------------------------------------------------------------
+  # Resolve the version once so every downstream job agrees on it.
+  # ---------------------------------------------------------------------------
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      value: ${{ steps.resolve.outputs.value }}
+    steps:
+      - name: Resolve version
+        id: resolve
+        shell: bash
+        run: |
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            value="${{ github.event.inputs.version }}"
+          else
+            value="${GITHUB_REF_NAME#v}"
+          fi
+          echo "value=$value" >> "$GITHUB_OUTPUT"
+          echo "Building version $value"
+
+  # ---------------------------------------------------------------------------
+  # Build the CLI and the desktop app for every supported platform.
+  # ---------------------------------------------------------------------------
+  build:
+    needs: version
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            rid: win-x64
+            archive: zip
+          - os: ubuntu-latest
+            rid: linux-x64
+            archive: tar
+          - os: ubuntu-24.04-arm
+            rid: linux-arm64
+            archive: tar
+          - os: macos-latest
+            rid: osx-arm64
+            archive: tar
+          - os: macos-13
+            rid: osx-x64
+            archive: tar
+
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
 
@@ -19,39 +68,191 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
-      - name: Resolve version from tag
-        id: version
-        shell: bash
-        run: echo "value=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
-
-      - name: Pack CLI as dotnet tool
-        run: dotnet pack src/Kaniff.Cli/Kaniff.Cli.csproj -c Release -p:Version=${{ steps.version.outputs.value }}
-
-      - name: Publish self-contained CLI (win-x64)
+      - name: Publish CLI (${{ matrix.rid }})
         run: >
           dotnet publish src/Kaniff.Cli/Kaniff.Cli.csproj
-          -c Release -r win-x64 --self-contained
-          -p:PublishSingleFile=true -p:Version=${{ steps.version.outputs.value }}
-          -o publish/win-x64
+          -c Release -r ${{ matrix.rid }} --self-contained
+          -p:PublishSingleFile=true
+          -p:EnableCompressionInSingleFile=true
+          -p:DebugType=none -p:DebugSymbols=false
+          -p:Version=${{ needs.version.outputs.value }}
+          -o publish/cli/${{ matrix.rid }}
 
-      - name: Zip CLI binary
+      - name: Publish desktop (${{ matrix.rid }})
+        run: >
+          dotnet publish src/Kaniff.Desktop/Kaniff.Desktop.csproj
+          -c Release -r ${{ matrix.rid }} --self-contained
+          -p:PublishSingleFile=true
+          -p:EnableCompressionInSingleFile=true
+          -p:DebugType=none -p:DebugSymbols=false
+          -p:Version=${{ needs.version.outputs.value }}
+          -o publish/desktop/${{ matrix.rid }}
+
+      # Native dependencies (SkiaSharp, HarfBuzz) ship their own PDBs, which are
+      # ~100 MB and useless to end users.
+      - name: Drop debug symbols
+        shell: bash
+        run: find publish -name '*.pdb' -delete
+
+      - name: Archive (zip)
+        if: matrix.archive == 'zip'
         shell: pwsh
-        run: Compress-Archive -Path publish/win-x64/* -DestinationPath kaniff-${{ steps.version.outputs.value }}-win-x64.zip
+        run: |
+          $v = '${{ needs.version.outputs.value }}'
+          $rid = '${{ matrix.rid }}'
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+          Compress-Archive -Path publish/cli/$rid/* -DestinationPath "dist/kaniff-$v-$rid.zip"
+          Compress-Archive -Path publish/desktop/$rid/* -DestinationPath "dist/kaniff-desktop-$v-$rid.zip"
 
-      - name: Push package to NuGet
+      - name: Archive (tar.gz)
+        if: matrix.archive == 'tar'
+        shell: bash
+        run: |
+          set -euo pipefail
+          v='${{ needs.version.outputs.value }}'
+          rid='${{ matrix.rid }}'
+          mkdir -p dist
+          chmod +x "publish/cli/$rid/kaniff"
+          chmod +x "publish/desktop/$rid/Kaniff.Desktop"
+          tar -czf "dist/kaniff-$v-$rid.tar.gz" -C "publish/cli/$rid" .
+          tar -czf "dist/kaniff-desktop-$v-$rid.tar.gz" -C "publish/desktop/$rid" .
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: kaniff-${{ matrix.rid }}
+          path: dist/*
+          retention-days: 1
+          if-no-files-found: error
+
+  # ---------------------------------------------------------------------------
+  # Pack the CLI as a dotnet global tool.
+  # ---------------------------------------------------------------------------
+  pack:
+    needs: version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Pack CLI as dotnet tool
+        run: >
+          dotnet pack src/Kaniff.Cli/Kaniff.Cli.csproj -c Release
+          -p:Version=${{ needs.version.outputs.value }}
+
+      - name: Upload package
+        uses: actions/upload-artifact@v4
+        with:
+          name: nupkg
+          path: artifacts/nupkg/*.nupkg
+          retention-days: 1
+          if-no-files-found: error
+
+  # ---------------------------------------------------------------------------
+  # Publish the GitHub release with every artifact and a checksums file.
+  # ---------------------------------------------------------------------------
+  release:
+    needs: [version, build, pack]
+    runs-on: ubuntu-latest
+    outputs:
+      win_sha256: ${{ steps.checksums.outputs.win_sha256 }}
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: staging
+
+      - name: Flatten artifacts
+        shell: bash
+        run: |
+          mkdir -p dist
+          find staging -type f \( -name '*.zip' -o -name '*.tar.gz' -o -name '*.nupkg' \) \
+            -exec mv {} dist/ \;
+          ls -lh dist
+
+      - name: Compute checksums
+        id: checksums
+        shell: bash
+        run: |
+          cd dist
+          sha256sum * > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+          win_sha256=$(sha256sum "kaniff-${{ needs.version.outputs.value }}-win-x64.zip" | cut -d' ' -f1)
+          echo "win_sha256=$win_sha256" >> "$GITHUB_OUTPUT"
+          echo "win-x64 SHA-256: $win_sha256"
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: false
+          generate_release_notes: true
+          files: dist/*
+
+  # ---------------------------------------------------------------------------
+  # Push the package to NuGet (skipped when the secret is not configured).
+  # ---------------------------------------------------------------------------
+  nuget:
+    needs: [version, release]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download package
+        uses: actions/download-artifact@v4
+        with:
+          name: nupkg
+          path: nupkg
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Push to NuGet
         env:
           NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
         shell: bash
         run: |
           if [ -z "$NUGET_API_KEY" ]; then
-            echo "NUGET_API_KEY secret not set; skipping NuGet push."
-          else
-            dotnet nuget push artifacts/nupkg/*.nupkg --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate
+            echo "::warning::NUGET_API_KEY secret is not set; skipping NuGet push."
+            exit 0
           fi
+          dotnet nuget push 'nupkg/*.nupkg' \
+            --api-key "$NUGET_API_KEY" \
+            --source https://api.nuget.org/v3/index.json \
+            --skip-duplicate
 
-      - name: Create GitHub release
-        uses: softprops/action-gh-release@v2
+  # ---------------------------------------------------------------------------
+  # Fill the Scoop/winget manifests with the released version + hash and commit
+  # them back to the default branch.
+  # ---------------------------------------------------------------------------
+  manifests:
+    needs: [version, release]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
         with:
-          files: |
-            artifacts/nupkg/*.nupkg
-            kaniff-${{ steps.version.outputs.value }}-win-x64.zip
+          ref: ${{ github.event.repository.default_branch }}
+
+      - name: Update manifests
+        shell: pwsh
+        run: >
+          ./scripts/Update-Manifests.ps1
+          -Version '${{ needs.version.outputs.value }}'
+          -Sha256 '${{ needs.release.outputs.win_sha256 }}'
+          -Owner '${{ github.repository_owner }}'
+
+      - name: Commit manifests
+        shell: bash
+        run: |
+          if [ -z "$(git status --porcelain packaging)" ]; then
+            echo "Manifests already up to date; nothing to commit."
+            exit 0
+          fi
+          git config user.name  'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add packaging
+          git commit -m "chore: update packaging manifests for v${{ needs.version.outputs.value }}"
+          git push

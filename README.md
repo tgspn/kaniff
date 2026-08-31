@@ -60,8 +60,18 @@ scoop install kaniff
 winget install Kaniff.Kaniff
 ```
 
-Or grab the standalone `kaniff-<version>-win-x64.zip` from the
-[latest release](https://github.com/tgspn/kaniff/releases/latest) — no runtime required.
+### Standalone downloads
+
+Every [release](https://github.com/tgspn/kaniff/releases/latest) ships self-contained
+builds — no .NET runtime required. Verify them against `SHA256SUMS.txt`.
+
+| Platform | CLI | Desktop |
+| --- | --- | --- |
+| Windows x64 | `kaniff-<v>-win-x64.zip` | `kaniff-desktop-<v>-win-x64.zip` |
+| Linux x64 | `kaniff-<v>-linux-x64.tar.gz` | `kaniff-desktop-<v>-linux-x64.tar.gz` |
+| Linux arm64 | `kaniff-<v>-linux-arm64.tar.gz` | `kaniff-desktop-<v>-linux-arm64.tar.gz` |
+| macOS Apple Silicon | `kaniff-<v>-osx-arm64.tar.gz` | `kaniff-desktop-<v>-osx-arm64.tar.gz` |
+| macOS Intel | `kaniff-<v>-osx-x64.tar.gz` | `kaniff-desktop-<v>-osx-x64.tar.gz` |
 
 ## Requirements
 
@@ -136,11 +146,27 @@ Quick version of adding a new tool:
 4. Add a `ViewModel` + `View` pair in the desktop app and list it in `MainViewModel`.
 5. Add tests in `tests/Kaniff.Tests` and a row to the tools table above.
 
+## Releasing
+
+Everything is automated. Push a tag and the
+[release workflow](.github/workflows/release.yml) will:
+
+1. Build the CLI and desktop app for 5 platforms (self-contained, single file).
+2. Pack the CLI as a `dotnet tool` and push it to NuGet.
+3. Publish a GitHub release with all archives and a `SHA256SUMS.txt`.
+4. Rewrite the Scoop/winget manifests with the new version and hash, and commit
+   them back to `main`.
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
 ## Roadmap
 
 - More tools (hexdump, cron expression explainer, diff viewer, lorem ipsum)
-- Linux/macOS builds of the desktop app
 - Tool search / command palette in the desktop app
+- Homebrew formula for macOS
 
 ## Security
 
