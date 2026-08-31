@@ -15,7 +15,7 @@ Every day you need a one-off tool: decode a Base64 string, check your public IP,
 
 | Tool | CLI verb | What it does |
 | ------ | ---------- | -------------- |
-| My IP | `ip` | Public IP (ifconfig.me + fallbacks) and local addresses |
+| My IP | `ip` | Public IPv4 and IPv6 (ifconfig.me + fallbacks) and local addresses |
 | Base64 | `base64` | Encode/decode text (standard or URL-safe) |
 | URL Encode | `url` | Percent-encode/decode text for URLs |
 | JWT | `jwt` | Decode a token's header and payload (no verification) |
