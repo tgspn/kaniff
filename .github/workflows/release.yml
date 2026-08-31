@@ -330,8 +330,17 @@ jobs:
   # ---------------------------------------------------------------------------
   # Submit the release to microsoft/winget-pkgs as a pull request.
   #
-  # Requires a WINGET_TOKEN secret (a classic PAT with `public_repo`) because the
-  # action has to fork and push to microsoft/winget-pkgs on your behalf.
+  # Unlike NuGet, winget has no OIDC/trusted-publishing story: the action pushes
+  # a branch to *your fork* of microsoft/winget-pkgs, which is a different
+  # repository, so a real credential is unavoidable.
+  #
+  # Prerequisites:
+  #   - microsoft/winget-pkgs forked under this account (the action does not
+  #     create the fork; it expects it to already exist)
+  #   - Kaniff.Kaniff already present in winget-pkgs -- the first version has to
+  #     be submitted manually, the action only updates existing packages
+  #   - a WINGET_TOKEN secret: a *classic* PAT with `public_repo`
+  #     (fine-grained PATs are not supported, see winget-releaser#172)
   # ---------------------------------------------------------------------------
   winget:
     needs: [version, release]
@@ -351,11 +360,16 @@ jobs:
             echo "enabled=true" >> "$GITHUB_OUTPUT"
           fi
 
+      # Pinned to a release tag rather than @main: this step receives a classic
+      # PAT, so it must not follow a mutable ref.
       - name: Submit to winget-pkgs
         if: steps.guard.outputs.enabled == 'true'
-        uses: vedantmgoyal9/winget-releaser@main
+        uses: vedantmgoyal9/winget-releaser@v2
         with:
           identifier: Kaniff.Kaniff
           version: ${{ needs.version.outputs.value }}
+          # Explicit because github.ref_name is the branch, not a tag, when the
+          # workflow is started manually.
+          release-tag: v${{ needs.version.outputs.value }}
           installers-regex: '-win-x64\.zip$'
           token: ${{ secrets.WINGET_TOKEN }}

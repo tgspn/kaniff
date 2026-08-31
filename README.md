@@ -169,9 +169,9 @@ so the release still succeeds without them.
 
 | Name | Kind | Used by | How to set it up |
 | --- | --- | --- | --- |
-| `NUGET_USER` | variable | step 2 | Your nuget.org profile name (not your e-mail). Not a secret. |
+| `NUGET_USER` | variable | step 2 | Your nuget.org profile name (not your e-mail, and not the package name). Not a secret. |
 | `SCOOP_BUCKET_TOKEN` | secret | step 4 | A fine-grained PAT for `tgspn/scoop-kaniff` only, with **Contents: Read and write** |
-| `WINGET_TOKEN` | secret | step 5 | A **classic** PAT with the `public_repo` scope (it has to fork `microsoft/winget-pkgs`) |
+| `WINGET_TOKEN` | secret | step 5 | A **classic** PAT with the `public_repo` scope. Fine-grained PATs are not supported by the action. |
 
 NuGet publishing uses
 [Trusted Publishing](https://learn.microsoft.com/nuget/nuget-org/trusted-publishing)
@@ -194,6 +194,17 @@ there is no key to rotate or leak. Register the policy under
 
 The built-in `GITHUB_TOKEN` cannot be used for steps 4 and 5 because it is
 scoped to this repository and cannot push to another repo or create forks.
+Unlike NuGet, winget has no trusted-publishing equivalent yet, so step 5 still
+needs a real credential.
+
+Step 5 additionally requires, one time only:
+
+- `microsoft/winget-pkgs` **forked under this account** — the action pushes to
+  the fork and does not create it for you.
+- **The first version submitted by hand.** The action updates an existing
+  package; it cannot introduce `Kaniff.Kaniff` to winget-pkgs. Use
+  [Komac](https://github.com/russellbanks/Komac) or `wingetcreate` for v0.1.0,
+  after which every later release is automatic.
 
 See [packaging/README.md](packaging/README.md) for why the manifests live
 outside this repository.
