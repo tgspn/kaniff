@@ -162,8 +162,20 @@ git tag v0.1.0
 git push origin v0.1.0
 ```
 
-Steps 2, 4 and 5 are skipped with a warning when their secrets
-(`NUGET_API_KEY`, `SCOOP_BUCKET_TOKEN`, `WINGET_TOKEN`) are not configured.
+### Required secrets
+
+Steps 2, 4 and 5 are skipped with a warning when their secret is missing, so the
+release still succeeds without them.
+
+| Secret | Used by | How to create it |
+| --- | --- | --- |
+| `NUGET_API_KEY` | step 2 | An API key from [nuget.org](https://www.nuget.org/account/apikeys) scoped to `Kaniff.Cli` |
+| `SCOOP_BUCKET_TOKEN` | step 4 | A fine-grained PAT for `tgspn/scoop-kaniff` only, with **Contents: Read and write** |
+| `WINGET_TOKEN` | step 5 | A **classic** PAT with the `public_repo` scope (it has to fork `microsoft/winget-pkgs`) |
+
+The built-in `GITHUB_TOKEN` cannot be used for steps 4 and 5 because it is
+scoped to this repository and cannot push to another repo or create forks.
+
 See [packaging/README.md](packaging/README.md) for why the manifests live
 outside this repository.
 
