@@ -162,16 +162,35 @@ git tag v0.1.0
 git push origin v0.1.0
 ```
 
-### Required secrets
+### Release configuration
 
-Steps 2, 4 and 5 are skipped with a warning when their secret is missing, so the
-release still succeeds without them.
+Steps 2, 4 and 5 are skipped with a warning when their configuration is missing,
+so the release still succeeds without them.
 
-| Secret | Used by | How to create it |
-| --- | --- | --- |
-| `NUGET_API_KEY` | step 2 | An API key from [nuget.org](https://www.nuget.org/account/apikeys) scoped to `Kaniff.Cli` |
-| `SCOOP_BUCKET_TOKEN` | step 4 | A fine-grained PAT for `tgspn/scoop-kaniff` only, with **Contents: Read and write** |
-| `WINGET_TOKEN` | step 5 | A **classic** PAT with the `public_repo` scope (it has to fork `microsoft/winget-pkgs`) |
+| Name | Kind | Used by | How to set it up |
+| --- | --- | --- | --- |
+| `NUGET_USER` | variable | step 2 | Your nuget.org profile name (not your e-mail). Not a secret. |
+| `SCOOP_BUCKET_TOKEN` | secret | step 4 | A fine-grained PAT for `tgspn/scoop-kaniff` only, with **Contents: Read and write** |
+| `WINGET_TOKEN` | secret | step 5 | A **classic** PAT with the `public_repo` scope (it has to fork `microsoft/winget-pkgs`) |
+
+NuGet publishing uses
+[Trusted Publishing](https://learn.microsoft.com/nuget/nuget-org/trusted-publishing)
+rather than a stored API key: GitHub issues a short-lived OIDC token, nuget.org
+validates it against a policy registered for this repository and workflow, and
+returns a temporary key valid for one hour. Nothing long-lived is stored, so
+there is no key to rotate or leak. Register the policy under
+**nuget.org → your username → Trusted Publishing** with:
+
+| Field | Value |
+| --- | --- |
+| Repository Owner | `tgspn` |
+| Repository | `kaniff` |
+| Workflow File | `release.yml` |
+| Environment | *(leave empty)* |
+
+> A new policy for a repository that has never published is *temporarily active*
+> for 7 days. Publish within that window or restart it, otherwise it goes
+> inactive.
 
 The built-in `GITHUB_TOKEN` cannot be used for steps 4 and 5 because it is
 scoped to this repository and cannot push to another repo or create forks.

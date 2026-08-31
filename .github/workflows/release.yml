@@ -10,8 +10,10 @@ on:
         description: 'Version to build (without the leading v), e.g. 0.1.0'
         required: true
 
+# Least privilege by default; the `release` job opts into `contents: write` and
+# the `nuget` job into `id-token: write`.
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   # ---------------------------------------------------------------------------
@@ -158,6 +160,8 @@ jobs:
   release:
     needs: [version, build, pack]
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # required to create the GitHub release
     outputs:
       win_sha256: ${{ steps.checksums.outputs.win_sha256 }}
     steps:
@@ -193,34 +197,65 @@ jobs:
           files: dist/*
 
   # ---------------------------------------------------------------------------
-  # Push the package to NuGet (skipped when the secret is not configured).
+  # Push the package to NuGet using Trusted Publishing (OIDC).
+  #
+  # No long-lived API key is stored. GitHub issues a short-lived OIDC token,
+  # nuget.org validates it against the trusted publishing policy registered for
+  # this repository and workflow file, and returns a temporary API key that is
+  # valid for one hour and usable once.
+  #
+  # Requires:
+  #   - a trusted publishing policy on nuget.org pointing at
+  #     tgspn / kaniff / release.yml
+  #   - a NUGET_USER variable (your nuget.org profile name, not your e-mail)
   # ---------------------------------------------------------------------------
   nuget:
     needs: [version, release]
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # required to request the OIDC token
     steps:
+      - name: Check for NuGet user
+        id: guard
+        env:
+          NUGET_USER: ${{ vars.NUGET_USER }}
+        shell: bash
+        run: |
+          if [ -z "$NUGET_USER" ]; then
+            echo "::warning::NUGET_USER variable is not set; skipping NuGet push."
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Download package
+        if: steps.guard.outputs.enabled == 'true'
         uses: actions/download-artifact@v4
         with:
           name: nupkg
           path: nupkg
 
       - name: Setup .NET
+        if: steps.guard.outputs.enabled == 'true'
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
 
+      # Requested immediately before the push: the key expires after one hour.
+      - name: NuGet login (OIDC)
+        if: steps.guard.outputs.enabled == 'true'
+        id: login
+        uses: NuGet/login@v1
+        with:
+          user: ${{ vars.NUGET_USER }}
+
       - name: Push to NuGet
-        env:
-          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        if: steps.guard.outputs.enabled == 'true'
         shell: bash
         run: |
-          if [ -z "$NUGET_API_KEY" ]; then
-            echo "::warning::NUGET_API_KEY secret is not set; skipping NuGet push."
-            exit 0
-          fi
           dotnet nuget push 'nupkg/*.nupkg' \
-            --api-key "$NUGET_API_KEY" \
+            --api-key '${{ steps.login.outputs.NUGET_API_KEY }}' \
             --source https://api.nuget.org/v3/index.json \
             --skip-duplicate
 
