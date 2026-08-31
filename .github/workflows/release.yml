@@ -1,0 +1,57 @@
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Resolve version from tag
+        id: version
+        shell: bash
+        run: echo "value=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Pack CLI as dotnet tool
+        run: dotnet pack src/Kaniff.Cli/Kaniff.Cli.csproj -c Release -p:Version=${{ steps.version.outputs.value }}
+
+      - name: Publish self-contained CLI (win-x64)
+        run: >
+          dotnet publish src/Kaniff.Cli/Kaniff.Cli.csproj
+          -c Release -r win-x64 --self-contained
+          -p:PublishSingleFile=true -p:Version=${{ steps.version.outputs.value }}
+          -o publish/win-x64
+
+      - name: Zip CLI binary
+        shell: pwsh
+        run: Compress-Archive -Path publish/win-x64/* -DestinationPath kaniff-${{ steps.version.outputs.value }}-win-x64.zip
+
+      - name: Push package to NuGet
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        shell: bash
+        run: |
+          if [ -z "$NUGET_API_KEY" ]; then
+            echo "NUGET_API_KEY secret not set; skipping NuGet push."
+          else
+            dotnet nuget push artifacts/nupkg/*.nupkg --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate
+          fi
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/nupkg/*.nupkg
+            kaniff-${{ steps.version.outputs.value }}-win-x64.zip

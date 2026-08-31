@@ -1,0 +1,37 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Kaniff.Core\Kaniff.Core.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>kaniff</AssemblyName>
+    <RootNamespace>Kaniff.Cli</RootNamespace>
+
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>kaniff</ToolCommandName>
+    <PackageId>Kaniff.Cli</PackageId>
+    <Version>0.1.0</Version>
+    <Authors>Kaniff contributors</Authors>
+    <Description>A developer Swiss Army knife CLI: IP, Base64, JWT, string compare, JSON and more.</Description>
+    <PackageTags>cli;tools;base64;jwt;json;devtools</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/tgspn/kaniff</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/tgspn/kaniff</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <Copyright>Copyright (c) 2026 Kaniff contributors</Copyright>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <PackageOutputPath>$(MSBuildThisFileDirectory)../../artifacts/nupkg</PackageOutputPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+    <None Include="..\..\LICENSE" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,40 @@
+name: Feature request
+description: Suggest a new tool or an improvement to an existing one
+labels: ["enhancement"]
+body:
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What are you proposing?
+      options:
+        - A brand new tool
+        - An improvement to an existing tool
+        - Something else
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does it solve?
+      description: What do you currently do instead? Which website does this replace?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: Sketch the CLI verb and/or the desktop UI you have in mind.
+      placeholder: |
+        kaniff hexdump <file>
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: constraints
+    attributes:
+      label: Constraints
+      options:
+        - label: This tool can work fully offline
+        - label: This tool does not require sending user input to a third party

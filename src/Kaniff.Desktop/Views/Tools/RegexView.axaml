@@ -1,0 +1,30 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Kaniff.Desktop.ViewModels.Tools"
+             x:Class="Kaniff.Desktop.Views.Tools.RegexView"
+             x:DataType="vm:RegexViewModel">
+    <DockPanel>
+        <StackPanel DockPanel.Dock="Top" Spacing="4" Margin="0,0,0,12">
+            <TextBlock Text="{Binding Title}" FontSize="22" FontWeight="Bold" />
+            <TextBlock Text="{Binding Description}" Opacity="0.7" />
+        </StackPanel>
+
+        <TextBox DockPanel.Dock="Top" PlaceholderText="Pattern"
+                 Text="{Binding Pattern}" Margin="0,0,0,8"
+                 FontFamily="Consolas,monospace" />
+
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="16" Margin="0,0,0,8">
+            <CheckBox Content="Ignore case" IsChecked="{Binding IgnoreCase}" />
+            <CheckBox Content="Multiline" IsChecked="{Binding Multiline}" />
+            <Button Content="Run" Command="{Binding RunCommand}" />
+        </StackPanel>
+
+        <SelectableTextBlock DockPanel.Dock="Bottom" Text="{Binding Result}"
+                             FontFamily="Consolas,monospace" Margin="0,8,0,0" />
+
+        <TextBox PlaceholderText="Input text"
+                 Text="{Binding Input}"
+                 AcceptsReturn="True" TextWrapping="Wrap"
+                 FontFamily="Consolas,monospace" />
+    </DockPanel>
+</UserControl>

@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Kaniff.Cli/Kaniff.Cli.csproj" />
+    <Project Path="src/Kaniff.Core/Kaniff.Core.csproj" />
+    <Project Path="src/Kaniff.Desktop/Kaniff.Desktop.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Kaniff.Tests/Kaniff.Tests.csproj" />
+  </Folder>
+</Solution>

@@ -1,0 +1,13 @@
+PackageIdentifier: Kaniff.Kaniff
+PackageVersion: 0.1.0
+InstallerType: zip
+NestedInstallerType: portable
+NestedInstallerFiles:
+  - RelativeFilePath: kaniff.exe
+    PortableCommandAlias: kaniff
+Installers:
+  - Architecture: x64
+    InstallerUrl: https://github.com/tgspn/kaniff/releases/download/v0.1.0/kaniff-0.1.0-win-x64.zip
+    InstallerSha256: REPLACE_WITH_SHA256
+ManifestType: installer
+ManifestVersion: 1.6.0

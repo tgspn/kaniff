@@ -1,0 +1,24 @@
+<Project>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <EnforceCodeStyleInBuild>false</EnforceCodeStyleInBuild>
+  </PropertyGroup>
+
+  <!-- Shared package metadata. Individual projects opt in with PackAsTool/PackageId. -->
+  <PropertyGroup>
+    <Product>Kaniff</Product>
+    <Authors>Kaniff contributors</Authors>
+    <Company>Kaniff contributors</Company>
+    <Copyright>Copyright (c) 2026 Kaniff contributors</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/tgspn/kaniff</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/tgspn/kaniff</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+  </PropertyGroup>
+
+</Project>

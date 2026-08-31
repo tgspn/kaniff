@@ -1,0 +1,27 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Kaniff.Desktop.ViewModels.Tools"
+             x:Class="Kaniff.Desktop.Views.Tools.HashView"
+             x:DataType="vm:HashViewModel">
+    <StackPanel Spacing="12">
+        <TextBlock Text="{Binding Title}" FontSize="22" FontWeight="Bold" />
+        <TextBlock Text="{Binding Description}" Opacity="0.7" />
+
+        <TextBox PlaceholderText="Text to hash"
+                 Text="{Binding Input}"
+                 AcceptsReturn="True" TextWrapping="Wrap"
+                 Height="80" FontFamily="Consolas,monospace" />
+        <Button Content="Compute" Command="{Binding ComputeCommand}" HorizontalAlignment="Left" />
+
+        <Grid ColumnDefinitions="80,*" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="6">
+            <TextBlock Grid.Row="0" Grid.Column="0" Text="MD5" Opacity="0.6" />
+            <SelectableTextBlock Grid.Row="0" Grid.Column="1" Text="{Binding Md5}" FontFamily="Consolas,monospace" TextWrapping="Wrap" />
+            <TextBlock Grid.Row="1" Grid.Column="0" Text="SHA-1" Opacity="0.6" />
+            <SelectableTextBlock Grid.Row="1" Grid.Column="1" Text="{Binding Sha1}" FontFamily="Consolas,monospace" TextWrapping="Wrap" />
+            <TextBlock Grid.Row="2" Grid.Column="0" Text="SHA-256" Opacity="0.6" />
+            <SelectableTextBlock Grid.Row="2" Grid.Column="1" Text="{Binding Sha256}" FontFamily="Consolas,monospace" TextWrapping="Wrap" />
+            <TextBlock Grid.Row="3" Grid.Column="0" Text="SHA-512" Opacity="0.6" />
+            <SelectableTextBlock Grid.Row="3" Grid.Column="1" Text="{Binding Sha512}" FontFamily="Consolas,monospace" TextWrapping="Wrap" />
+        </Grid>
+    </StackPanel>
+</UserControl>

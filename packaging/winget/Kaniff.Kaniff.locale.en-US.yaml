@@ -1,0 +1,15 @@
+PackageIdentifier: Kaniff.Kaniff
+PackageVersion: 0.1.0
+PackageLocale: en-US
+Publisher: Kaniff contributors
+PublisherUrl: https://github.com/tgspn/kaniff
+PackageName: Kaniff
+PackageUrl: https://github.com/tgspn/kaniff
+License: MIT
+ShortDescription: A developer Swiss Army knife CLI: IP, Base64, JWT, hash, JSON and more.
+Tags:
+  - cli
+  - devtools
+  - utilities
+ManifestType: defaultLocale
+ManifestVersion: 1.6.0

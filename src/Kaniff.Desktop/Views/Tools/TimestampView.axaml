@@ -1,0 +1,22 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Kaniff.Desktop.ViewModels.Tools"
+             x:Class="Kaniff.Desktop.Views.Tools.TimestampView"
+             x:DataType="vm:TimestampViewModel">
+    <StackPanel Spacing="12">
+        <TextBlock Text="{Binding Title}" FontSize="22" FontWeight="Bold" />
+        <TextBlock Text="{Binding Description}" Opacity="0.7" />
+
+        <TextBox PlaceholderText="Unix time (s/ms) or a date — empty = now"
+                 Text="{Binding Input}"
+                 FontFamily="Consolas,monospace" />
+        <StackPanel Orientation="Horizontal" Spacing="8">
+            <Button Content="Convert" Command="{Binding ConvertCommand}" />
+            <Button Content="Now" Command="{Binding NowCommand}" />
+        </StackPanel>
+
+        <Border Background="#2A2A33" CornerRadius="8" Padding="16">
+            <SelectableTextBlock Text="{Binding Result}" FontFamily="Consolas,monospace" />
+        </Border>
+    </StackPanel>
+</UserControl>

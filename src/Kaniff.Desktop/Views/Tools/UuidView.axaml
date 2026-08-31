@@ -1,0 +1,23 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Kaniff.Desktop.ViewModels.Tools"
+             x:Class="Kaniff.Desktop.Views.Tools.UuidView"
+             x:DataType="vm:UuidViewModel">
+    <DockPanel>
+        <StackPanel DockPanel.Dock="Top" Spacing="4" Margin="0,0,0,12">
+            <TextBlock Text="{Binding Title}" FontSize="22" FontWeight="Bold" />
+            <TextBlock Text="{Binding Description}" Opacity="0.7" />
+        </StackPanel>
+
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="12" Margin="0,0,0,12">
+            <TextBlock Text="Count" VerticalAlignment="Center" />
+            <NumericUpDown Value="{Binding Count}" Minimum="1" Maximum="1000" Width="120" />
+            <CheckBox Content="Uppercase" IsChecked="{Binding Uppercase}" VerticalAlignment="Center" />
+            <Button Content="Generate" Command="{Binding GenerateCommand}" />
+        </StackPanel>
+
+        <TextBox Text="{Binding Output}" IsReadOnly="True"
+                 AcceptsReturn="True" TextWrapping="NoWrap"
+                 FontFamily="Consolas,monospace" />
+    </DockPanel>
+</UserControl>

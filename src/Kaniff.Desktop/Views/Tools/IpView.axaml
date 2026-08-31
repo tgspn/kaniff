@@ -1,0 +1,32 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Kaniff.Desktop.ViewModels.Tools"
+             x:Class="Kaniff.Desktop.Views.Tools.IpView"
+             x:DataType="vm:IpViewModel">
+    <StackPanel Spacing="12">
+        <TextBlock Text="{Binding Title}" FontSize="22" FontWeight="Bold" />
+        <TextBlock Text="{Binding Description}" Opacity="0.7" />
+
+        <Border Background="#2A2A33" CornerRadius="8" Padding="16">
+            <StackPanel Spacing="4">
+                <TextBlock Text="Public IP" Opacity="0.6" FontSize="12" />
+                <SelectableTextBlock Text="{Binding PublicIp}" FontSize="24" FontWeight="Bold" />
+                <TextBlock Text="{Binding PublicSource}" Opacity="0.5" FontSize="11" />
+            </StackPanel>
+        </Border>
+
+        <TextBlock Text="Local addresses" Opacity="0.6" FontSize="12" />
+        <ItemsControl ItemsSource="{Binding LocalAddresses}">
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <SelectableTextBlock Text="{Binding}" FontFamily="Consolas,monospace" Margin="0,2" />
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <Button Content="Refresh"
+                Command="{Binding RefreshCommand}"
+                IsEnabled="{Binding !IsBusy}"
+                HorizontalAlignment="Left" />
+    </StackPanel>
+</UserControl>

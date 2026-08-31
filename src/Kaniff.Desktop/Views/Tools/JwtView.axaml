@@ -1,0 +1,45 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Kaniff.Desktop.ViewModels.Tools"
+             x:Class="Kaniff.Desktop.Views.Tools.JwtView"
+             x:DataType="vm:JwtViewModel">
+    <DockPanel>
+        <StackPanel DockPanel.Dock="Top" Spacing="4" Margin="0,0,0,12">
+            <TextBlock Text="{Binding Title}" FontSize="22" FontWeight="Bold" />
+            <TextBlock Text="{Binding Description}" Opacity="0.7" />
+        </StackPanel>
+
+        <TextBox DockPanel.Dock="Top"
+                 PlaceholderText="Paste JWT here"
+                 Text="{Binding Token}"
+                 AcceptsReturn="True" TextWrapping="Wrap"
+                 Height="90"
+                 FontFamily="Consolas,monospace" />
+
+        <Button DockPanel.Dock="Top"
+                Content="Decode"
+                Command="{Binding DecodeCommand}"
+                HorizontalAlignment="Left"
+                Margin="0,8" />
+
+        <SelectableTextBlock DockPanel.Dock="Bottom"
+                             Text="{Binding Summary}"
+                             FontFamily="Consolas,monospace"
+                             Margin="0,8,0,0" />
+
+        <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+            <StackPanel Grid.Column="0">
+                <TextBlock Text="Header" Opacity="0.6" FontSize="12" Margin="0,0,0,4" />
+                <TextBox Text="{Binding Header}" IsReadOnly="True"
+                         AcceptsReturn="True" TextWrapping="Wrap"
+                         FontFamily="Consolas,monospace" MinHeight="200" />
+            </StackPanel>
+            <StackPanel Grid.Column="1">
+                <TextBlock Text="Payload" Opacity="0.6" FontSize="12" Margin="0,0,0,4" />
+                <TextBox Text="{Binding Payload}" IsReadOnly="True"
+                         AcceptsReturn="True" TextWrapping="Wrap"
+                         FontFamily="Consolas,monospace" MinHeight="200" />
+            </StackPanel>
+        </Grid>
+    </DockPanel>
+</UserControl>

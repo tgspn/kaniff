@@ -1,0 +1,34 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Kaniff.Desktop.ViewModels.Tools"
+             x:Class="Kaniff.Desktop.Views.Tools.ColorView"
+             x:DataType="vm:ColorViewModel">
+    <StackPanel Spacing="12">
+        <TextBlock Text="{Binding Title}" FontSize="22" FontWeight="Bold" />
+        <TextBlock Text="{Binding Description}" Opacity="0.7" />
+
+        <StackPanel Orientation="Horizontal" Spacing="8">
+            <TextBox PlaceholderText="#RRGGBB or rgb(r, g, b)"
+                     Text="{Binding Input}" Width="260"
+                     FontFamily="Consolas,monospace" />
+            <Button Content="Convert" Command="{Binding ConvertCommand}" />
+        </StackPanel>
+
+        <StackPanel Orientation="Horizontal" Spacing="16">
+            <Border Width="80" Height="80" CornerRadius="8"
+                    Background="{Binding Swatch}"
+                    BorderBrush="#444" BorderThickness="1" />
+            <Grid ColumnDefinitions="50,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="6"
+                  VerticalAlignment="Center">
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="HEX" Opacity="0.6" />
+                <SelectableTextBlock Grid.Row="0" Grid.Column="1" Text="{Binding Hex}" FontFamily="Consolas,monospace" />
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="RGB" Opacity="0.6" />
+                <SelectableTextBlock Grid.Row="1" Grid.Column="1" Text="{Binding Rgb}" FontFamily="Consolas,monospace" />
+                <TextBlock Grid.Row="2" Grid.Column="0" Text="HSL" Opacity="0.6" />
+                <SelectableTextBlock Grid.Row="2" Grid.Column="1" Text="{Binding Hsl}" FontFamily="Consolas,monospace" />
+            </Grid>
+        </StackPanel>
+
+        <TextBlock Text="{Binding Error}" Foreground="#E06C75" />
+    </StackPanel>
+</UserControl>

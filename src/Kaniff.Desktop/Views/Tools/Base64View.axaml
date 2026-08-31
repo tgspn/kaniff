@@ -1,0 +1,29 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Kaniff.Desktop.ViewModels.Tools"
+             x:Class="Kaniff.Desktop.Views.Tools.Base64View"
+             x:DataType="vm:Base64ViewModel">
+    <DockPanel>
+        <StackPanel DockPanel.Dock="Top" Spacing="4" Margin="0,0,0,12">
+            <TextBlock Text="{Binding Title}" FontSize="22" FontWeight="Bold" />
+            <TextBlock Text="{Binding Description}" Opacity="0.7" />
+        </StackPanel>
+
+        <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Spacing="8" Margin="0,12,0,0">
+            <Button Content="Encode" Command="{Binding EncodeCommand}" />
+            <Button Content="Decode" Command="{Binding DecodeCommand}" />
+            <CheckBox Content="URL-safe" IsChecked="{Binding UrlSafe}" VerticalAlignment="Center" />
+        </StackPanel>
+
+        <Grid RowDefinitions="*,*" RowSpacing="8">
+            <TextBox Grid.Row="0" PlaceholderText="Input"
+                     Text="{Binding Input}"
+                     AcceptsReturn="True" TextWrapping="Wrap"
+                     FontFamily="Consolas,monospace" />
+            <TextBox Grid.Row="1" PlaceholderText="Output"
+                     Text="{Binding Output}" IsReadOnly="True"
+                     AcceptsReturn="True" TextWrapping="Wrap"
+                     FontFamily="Consolas,monospace" />
+        </Grid>
+    </DockPanel>
+</UserControl>

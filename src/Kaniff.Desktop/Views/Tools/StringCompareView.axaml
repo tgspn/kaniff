@@ -1,0 +1,32 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Kaniff.Desktop.ViewModels.Tools"
+             x:Class="Kaniff.Desktop.Views.Tools.StringCompareView"
+             x:DataType="vm:StringCompareViewModel">
+    <DockPanel>
+        <StackPanel DockPanel.Dock="Top" Spacing="4" Margin="0,0,0,12">
+            <TextBlock Text="{Binding Title}" FontSize="22" FontWeight="Bold" />
+            <TextBlock Text="{Binding Description}" Opacity="0.7" />
+        </StackPanel>
+
+        <StackPanel DockPanel.Dock="Bottom" Spacing="8" Margin="0,12,0,0">
+            <StackPanel Orientation="Horizontal" Spacing="16">
+                <CheckBox Content="Ignore case" IsChecked="{Binding IgnoreCase}" />
+                <CheckBox Content="Ignore whitespace" IsChecked="{Binding IgnoreWhitespace}" />
+                <Button Content="Compare" Command="{Binding CompareCommand}" />
+            </StackPanel>
+            <SelectableTextBlock Text="{Binding Result}" FontFamily="Consolas,monospace" />
+        </StackPanel>
+
+        <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+            <TextBox Grid.Column="0" PlaceholderText="Left"
+                     Text="{Binding Left}"
+                     AcceptsReturn="True" TextWrapping="Wrap"
+                     FontFamily="Consolas,monospace" />
+            <TextBox Grid.Column="1" PlaceholderText="Right"
+                     Text="{Binding Right}"
+                     AcceptsReturn="True" TextWrapping="Wrap"
+                     FontFamily="Consolas,monospace" />
+        </Grid>
+    </DockPanel>
+</UserControl>

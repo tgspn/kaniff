@@ -1,0 +1,23 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Kaniff.Desktop.ViewModels.Tools"
+             x:Class="Kaniff.Desktop.Views.Tools.CaseView"
+             x:DataType="vm:CaseViewModel">
+    <DockPanel>
+        <StackPanel DockPanel.Dock="Top" Spacing="4" Margin="0,0,0,12">
+            <TextBlock Text="{Binding Title}" FontSize="22" FontWeight="Bold" />
+            <TextBlock Text="{Binding Description}" Opacity="0.7" />
+        </StackPanel>
+
+        <TextBox DockPanel.Dock="Top" PlaceholderText="Text"
+                 Text="{Binding Input}" Margin="0,0,0,8"
+                 FontFamily="Consolas,monospace" />
+        <Button DockPanel.Dock="Top" Content="Convert"
+                Command="{Binding ConvertCommand}"
+                HorizontalAlignment="Left" Margin="0,0,0,8" />
+
+        <TextBox Text="{Binding Result}" IsReadOnly="True"
+                 AcceptsReturn="True" TextWrapping="NoWrap"
+                 FontFamily="Consolas,monospace" />
+    </DockPanel>
+</UserControl>

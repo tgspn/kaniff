@@ -1,0 +1,26 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Kaniff.Desktop.ViewModels.Tools"
+             x:Class="Kaniff.Desktop.Views.Tools.QrView"
+             x:DataType="vm:QrViewModel">
+    <DockPanel>
+        <StackPanel DockPanel.Dock="Top" Spacing="4" Margin="0,0,0,12">
+            <TextBlock Text="{Binding Title}" FontSize="22" FontWeight="Bold" />
+            <TextBlock Text="{Binding Description}" Opacity="0.7" />
+        </StackPanel>
+
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8" Margin="0,0,0,12">
+            <TextBox PlaceholderText="Text or URL"
+                     Text="{Binding Input}" Width="360"
+                     FontFamily="Consolas,monospace" />
+            <Button Content="Generate" Command="{Binding GenerateCommand}" />
+        </StackPanel>
+
+        <TextBlock DockPanel.Dock="Bottom" Text="{Binding Error}" Foreground="#E06C75" />
+
+        <Border Background="White" CornerRadius="8" Padding="16"
+                HorizontalAlignment="Left" VerticalAlignment="Top">
+            <Image Source="{Binding Image}" Width="256" Height="256" />
+        </Border>
+    </DockPanel>
+</UserControl>
