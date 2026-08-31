@@ -135,12 +135,15 @@ your system light/dark theme.
 dotnet run --project src/Kaniff.Desktop
 ```
 
+<!-- Absolute image URLs: this README is packed into the NuGet package
+     (PackageReadmeFile), where relative paths would not resolve. -->
+
 | | |
 | --- | --- |
-| ![QR code generator](docs/images/desktop-qr.png) | ![Color converter](docs/images/desktop-color.png) |
+| ![QR code generator](https://raw.githubusercontent.com/tgspn/kaniff/main/docs/images/desktop-qr.png) | ![Color converter](https://raw.githubusercontent.com/tgspn/kaniff/main/docs/images/desktop-color.png) |
 | **QR** — renders a scannable code from any text | **Color** — converts between HEX, RGB and HSL |
 
-![Hash calculator](docs/images/desktop-hash.png)
+![Hash calculator](https://raw.githubusercontent.com/tgspn/kaniff/main/docs/images/desktop-hash.png)
 
 *Hash — MD5, SHA-1, SHA-256 and SHA-512 in one pass.*
 
