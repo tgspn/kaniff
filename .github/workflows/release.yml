@@ -67,7 +67,7 @@ jobs:
 
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -138,7 +138,7 @@ jobs:
     needs: version
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -296,13 +296,13 @@ jobs:
 
       - name: Checkout kaniff (for the update script)
         if: steps.guard.outputs.enabled == 'true'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           path: kaniff
 
       - name: Checkout bucket
         if: steps.guard.outputs.enabled == 'true'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: ${{ github.repository_owner }}/scoop-kaniff
           token: ${{ secrets.SCOOP_BUCKET_TOKEN }}
