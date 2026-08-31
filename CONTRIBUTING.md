@@ -36,6 +36,7 @@ dotnet run --project src/Kaniff.Desktop
 | `tests/Kaniff.Tests` | xUnit tests for `Kaniff.Core`. |
 | `packaging/` | Scoop and winget manifests (updated automatically on release). |
 | `scripts/` | Release helper scripts. |
+| `docs/images/` | Screenshots referenced by `README.md`. |
 
 ## Adding a new tool
 
@@ -56,6 +57,11 @@ dotnet run --project src/Kaniff.Desktop
 - Keep dependencies to a minimum.
 - Code, comments, and documentation are written in English.
 - `dotnet build` must produce **zero warnings** and `dotnet test` must pass.
+- Screenshots go in `docs/images/`. Capture them with a **dark** system theme —
+  the sidebar and cards are hard-coded dark, so a light theme renders the window
+  as a mismatched hybrid. Never screenshot the **My IP** tool: it is the tool the
+  app opens on and it refreshes automatically, so a capture would commit your
+  real public IP and local interfaces to the repository.
 
 ## Pull requests
 

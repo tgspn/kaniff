@@ -39,6 +39,7 @@ src/
 tests/
   Kaniff.Tests/     xUnit tests for the Core tools
 packaging/          Scoop and winget manifests
+docs/images/        Screenshots used by this README
 .github/workflows/  CI and release automation
 ```
 
@@ -127,9 +128,24 @@ Update or remove it later with `dotnet tool update -g Kaniff.Cli` / `dotnet tool
 
 ## Desktop app
 
+The same 13 tools, with a sidebar to switch between them. The window follows
+your system light/dark theme.
+
 ```bash
 dotnet run --project src/Kaniff.Desktop
 ```
+
+<!-- Absolute image URLs: this README is packed into the NuGet package
+     (PackageReadmeFile), where relative paths would not resolve. -->
+
+| | |
+| --- | --- |
+| ![QR code generator](https://raw.githubusercontent.com/tgspn/kaniff/main/docs/images/desktop-qr.png) | ![Color converter](https://raw.githubusercontent.com/tgspn/kaniff/main/docs/images/desktop-color.png) |
+| **QR** — renders a scannable code from any text | **Color** — converts between HEX, RGB and HSL |
+
+![Hash calculator](https://raw.githubusercontent.com/tgspn/kaniff/main/docs/images/desktop-hash.png)
+
+*Hash — MD5, SHA-1, SHA-256 and SHA-512 in one pass.*
 
 ## Contributing
 
