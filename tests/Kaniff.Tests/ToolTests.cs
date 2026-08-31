@@ -117,4 +117,30 @@ public class ToolTests
         Assert.False(r.AreEqual);
         Assert.Equal(2, r.FirstDifferenceIndex);
     }
+
+    [Fact]
+    public void Ip_LocalAddresses_IncludeIPv4()
+    {
+        using var tool = new IpTool();
+        var addresses = tool.GetLocalAddresses();
+
+        // Any machine running this test has at least one non-loopback IPv4
+        // address, so an empty v4 set means the filter is broken.
+        Assert.Contains(addresses, a => a.IsIPv4);
+    }
+
+    [Fact]
+    public void Ip_LocalAddresses_ExcludeIPv6_WhenNotRequested()
+    {
+        using var tool = new IpTool();
+        Assert.All(tool.GetLocalAddresses(includeIPv6: false), a => Assert.True(a.IsIPv4));
+    }
+
+    [Fact]
+    public void Ip_PublicIpPair_ReportsEmptyOnlyWhenBothAreMissing()
+    {
+        Assert.True(new PublicIpPair(null, null).IsEmpty);
+        Assert.False(new PublicIpPair(new PublicIpResult("203.0.113.1", "test"), null).IsEmpty);
+        Assert.False(new PublicIpPair(null, new PublicIpResult("2001:db8::1", "test")).IsEmpty);
+    }
 }

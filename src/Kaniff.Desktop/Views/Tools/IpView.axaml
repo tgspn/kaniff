@@ -8,10 +8,23 @@
         <TextBlock Text="{Binding Description}" Opacity="0.7" />
 
         <Border Background="#2A2A33" CornerRadius="8" Padding="16">
-            <StackPanel Spacing="4">
-                <TextBlock Text="Public IP" Opacity="0.6" FontSize="12" />
-                <SelectableTextBlock Text="{Binding PublicIp}" FontSize="24" FontWeight="Bold" />
-                <TextBlock Text="{Binding PublicSource}" Opacity="0.5" FontSize="11" />
+            <StackPanel Spacing="10">
+                <StackPanel Spacing="2">
+                    <TextBlock Text="Public IPv4" Opacity="0.6" FontSize="12" />
+                    <SelectableTextBlock Text="{Binding PublicIpV4}"
+                                         FontSize="24" FontWeight="Bold"
+                                         TextWrapping="Wrap" />
+                </StackPanel>
+                <StackPanel Spacing="2">
+                    <TextBlock Text="Public IPv6" Opacity="0.6" FontSize="12" />
+                    <!-- Smaller: a full v6 address is 39 characters and would
+                         otherwise wrap awkwardly at the window's default width. -->
+                    <SelectableTextBlock Text="{Binding PublicIpV6}"
+                                         FontSize="16" FontWeight="Bold"
+                                         FontFamily="Consolas,monospace"
+                                         TextWrapping="Wrap" />
+                </StackPanel>
+                <TextBlock Text="{Binding PublicSource}" Opacity="0.5" FontSize="11" TextWrapping="Wrap" />
             </StackPanel>
         </Border>
 

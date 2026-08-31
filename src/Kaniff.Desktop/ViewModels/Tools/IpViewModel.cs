@@ -15,7 +15,10 @@ public partial class IpViewModel : ToolPageViewModel
     }
 
     [ObservableProperty]
-    public partial string PublicIp { get; set; } = "…";
+    public partial string PublicIpV4 { get; set; } = "…";
+
+    [ObservableProperty]
+    public partial string PublicIpV6 { get; set; } = "…";
 
     [ObservableProperty]
     public partial string PublicSource { get; set; } = string.Empty;
@@ -35,15 +38,28 @@ public partial class IpViewModel : ToolPageViewModel
             foreach (var addr in _tool.GetLocalAddresses())
                 LocalAddresses.Add($"{addr.Address}  ({(addr.IsIPv4 ? "IPv4" : "IPv6")}, {addr.InterfaceName})");
 
+            PublicIpV4 = "…";
+            PublicIpV6 = "…";
+            PublicSource = string.Empty;
+
             try
             {
-                var result = await _tool.GetPublicIpAsync();
-                PublicIp = result.Ip;
-                PublicSource = $"via {result.Source}";
+                var pair = await _tool.GetPublicIpsAsync();
+
+                // "not available" is a normal answer here: a network without
+                // IPv6 has no public v6 address, and vice versa.
+                PublicIpV4 = pair.V4?.Ip ?? "not available";
+                PublicIpV6 = pair.V6?.Ip ?? "not available";
+
+                var source = pair.V4?.Source ?? pair.V6?.Source;
+                PublicSource = pair.IsEmpty
+                    ? "No public address could be resolved. Are you offline?"
+                    : $"via {source}";
             }
             catch (Exception ex)
             {
-                PublicIp = "unavailable";
+                PublicIpV4 = "unavailable";
+                PublicIpV6 = "unavailable";
                 PublicSource = ex.Message;
             }
         }

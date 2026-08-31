@@ -61,14 +61,24 @@ internal static class KaniffCli
         if (!wantLocal && !wantPublic)
             wantLocal = wantPublic = true;
 
-        var tool = new IpTool();
+        using var tool = new IpTool();
 
         if (wantPublic)
         {
             try
             {
-                var result = await tool.GetPublicIpAsync();
-                Console.WriteLine($"Public : {result.Ip}  (via {result.Source})");
+                var pair = await tool.GetPublicIpsAsync();
+                if (pair.IsEmpty)
+                {
+                    Console.Error.WriteLine("Public : unavailable — no address could be resolved.");
+                }
+                else
+                {
+                    var source = pair.V4?.Source ?? pair.V6?.Source;
+                    Console.WriteLine($"Public4: {pair.V4?.Ip ?? "not available"}");
+                    Console.WriteLine($"Public6: {pair.V6?.Ip ?? "not available"}");
+                    Console.WriteLine($"         (via {source})");
+                }
             }
             catch (Exception ex)
             {

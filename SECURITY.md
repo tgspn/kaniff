@@ -33,8 +33,10 @@ vulnerability:
 - **MD5 and SHA-1 are provided for interoperability** with legacy systems. They
   are not considered secure for cryptographic purposes.
 - **All tools run offline**, except the public IP lookup, which contacts
-  `ifconfig.me` and equivalent fallback endpoints. No other tool transmits user
-  input anywhere.
+  `ifconfig.me`, `ipify.org`, `icanhazip.com` and `ifconfig.co` (including their
+  IPv4- and IPv6-only hostnames, queried separately to report both families).
+  Those requests send no user input beyond what any HTTP request reveals: your
+  IP address and a `User-Agent`. No other tool transmits data anywhere.
 
 Issues we are interested in include remote code execution, arbitrary file
 write/read via crafted input, and unintended network transmission of user data.
