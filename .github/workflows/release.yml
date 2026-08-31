@@ -4,54 +4,382 @@ on:
   push:
     tags:
       - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to build (without the leading v), e.g. 0.1.0'
+        required: true
 
+# Least privilege by default; the `release` job opts into `contents: write` and
+# the `nuget` job into `id-token: write`.
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  release:
-    runs-on: windows-latest
+  # ---------------------------------------------------------------------------
+  # Resolve the version once so every downstream job agrees on it.
+  # ---------------------------------------------------------------------------
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      value: ${{ steps.resolve.outputs.value }}
+    steps:
+      - name: Resolve version
+        id: resolve
+        shell: bash
+        run: |
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            value="${{ github.event.inputs.version }}"
+          else
+            value="${GITHUB_REF_NAME#v}"
+          fi
+          echo "value=$value" >> "$GITHUB_OUTPUT"
+          echo "Building version $value"
+
+  # ---------------------------------------------------------------------------
+  # Build the CLI and the desktop app for every supported platform.
+  # ---------------------------------------------------------------------------
+  build:
+    needs: version
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            rid: win-x64
+            archive: zip
+          - os: ubuntu-latest
+            rid: linux-x64
+            archive: tar
+          - os: ubuntu-24.04-arm
+            rid: linux-arm64
+            archive: tar
+          - os: macos-latest
+            rid: osx-arm64
+            archive: tar
+          # macos-13 was the last Intel image on the plain macOS line; it was
+          # retired in December 2025, and jobs targeting it now sit in the queue
+          # forever instead of failing. macos-15-intel replaces it and is
+          # available until August 2027, when Actions drops x86_64 entirely.
+          - os: macos-15-intel
+            rid: osx-x64
+            archive: tar
+
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v6
         with:
           dotnet-version: '10.0.x'
 
-      - name: Resolve version from tag
-        id: version
-        shell: bash
-        run: echo "value=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
-
-      - name: Pack CLI as dotnet tool
-        run: dotnet pack src/Kaniff.Cli/Kaniff.Cli.csproj -c Release -p:Version=${{ steps.version.outputs.value }}
-
-      - name: Publish self-contained CLI (win-x64)
+      - name: Publish CLI (${{ matrix.rid }})
         run: >
           dotnet publish src/Kaniff.Cli/Kaniff.Cli.csproj
-          -c Release -r win-x64 --self-contained
-          -p:PublishSingleFile=true -p:Version=${{ steps.version.outputs.value }}
-          -o publish/win-x64
+          -c Release -r ${{ matrix.rid }} --self-contained
+          -p:PublishSingleFile=true
+          -p:EnableCompressionInSingleFile=true
+          -p:DebugType=none -p:DebugSymbols=false
+          -p:Version=${{ needs.version.outputs.value }}
+          -o publish/cli/${{ matrix.rid }}
 
-      - name: Zip CLI binary
+      - name: Publish desktop (${{ matrix.rid }})
+        run: >
+          dotnet publish src/Kaniff.Desktop/Kaniff.Desktop.csproj
+          -c Release -r ${{ matrix.rid }} --self-contained
+          -p:PublishSingleFile=true
+          -p:EnableCompressionInSingleFile=true
+          -p:DebugType=none -p:DebugSymbols=false
+          -p:Version=${{ needs.version.outputs.value }}
+          -o publish/desktop/${{ matrix.rid }}
+
+      # Native dependencies (SkiaSharp, HarfBuzz) ship their own PDBs, which are
+      # ~100 MB and useless to end users.
+      - name: Drop debug symbols
+        shell: bash
+        run: find publish -name '*.pdb' -delete
+
+      - name: Archive (zip)
+        if: matrix.archive == 'zip'
         shell: pwsh
-        run: Compress-Archive -Path publish/win-x64/* -DestinationPath kaniff-${{ steps.version.outputs.value }}-win-x64.zip
+        run: |
+          $v = '${{ needs.version.outputs.value }}'
+          $rid = '${{ matrix.rid }}'
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+          Compress-Archive -Path publish/cli/$rid/* -DestinationPath "dist/kaniff-$v-$rid.zip"
+          Compress-Archive -Path publish/desktop/$rid/* -DestinationPath "dist/kaniff-desktop-$v-$rid.zip"
 
-      - name: Push package to NuGet
-        env:
-          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+      - name: Archive (tar.gz)
+        if: matrix.archive == 'tar'
         shell: bash
         run: |
-          if [ -z "$NUGET_API_KEY" ]; then
-            echo "NUGET_API_KEY secret not set; skipping NuGet push."
-          else
-            dotnet nuget push artifacts/nupkg/*.nupkg --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate
-          fi
+          set -euo pipefail
+          v='${{ needs.version.outputs.value }}'
+          rid='${{ matrix.rid }}'
+          mkdir -p dist
+          chmod +x "publish/cli/$rid/kaniff"
+          chmod +x "publish/desktop/$rid/Kaniff.Desktop"
+          tar -czf "dist/kaniff-$v-$rid.tar.gz" -C "publish/cli/$rid" .
+          tar -czf "dist/kaniff-desktop-$v-$rid.tar.gz" -C "publish/desktop/$rid" .
 
-      - name: Create GitHub release
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: kaniff-${{ matrix.rid }}
+          path: dist/*
+          retention-days: 1
+          if-no-files-found: error
+
+  # ---------------------------------------------------------------------------
+  # Pack the CLI as a dotnet global tool.
+  # ---------------------------------------------------------------------------
+  pack:
+    needs: version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Pack CLI as dotnet tool
+        run: >
+          dotnet pack src/Kaniff.Cli/Kaniff.Cli.csproj -c Release
+          -p:Version=${{ needs.version.outputs.value }}
+
+      - name: Upload package
+        uses: actions/upload-artifact@v4
+        with:
+          name: nupkg
+          path: artifacts/nupkg/*.nupkg
+          retention-days: 1
+          if-no-files-found: error
+
+  # ---------------------------------------------------------------------------
+  # Publish the GitHub release with every artifact and a checksums file.
+  # ---------------------------------------------------------------------------
+  release:
+    needs: [version, build, pack]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # required to create the GitHub release
+    outputs:
+      win_sha256: ${{ steps.checksums.outputs.win_sha256 }}
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: staging
+
+      - name: Flatten artifacts
+        shell: bash
+        run: |
+          mkdir -p dist
+          find staging -type f \( -name '*.zip' -o -name '*.tar.gz' -o -name '*.nupkg' \) \
+            -exec mv {} dist/ \;
+          ls -lh dist
+
+      - name: Compute checksums
+        id: checksums
+        shell: bash
+        run: |
+          cd dist
+          sha256sum * > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+          win_sha256=$(sha256sum "kaniff-${{ needs.version.outputs.value }}-win-x64.zip" | cut -d' ' -f1)
+          echo "win_sha256=$win_sha256" >> "$GITHUB_OUTPUT"
+          echo "win-x64 SHA-256: $win_sha256"
+
+      - name: Publish release
         uses: softprops/action-gh-release@v2
         with:
-          files: |
-            artifacts/nupkg/*.nupkg
-            kaniff-${{ steps.version.outputs.value }}-win-x64.zip
+          # Explicit because the action defaults to github.ref, which is the
+          # branch rather than a tag when the workflow is started manually.
+          tag_name: v${{ needs.version.outputs.value }}
+          draft: false
+          generate_release_notes: true
+          files: dist/*
+
+  # ---------------------------------------------------------------------------
+  # Push the package to NuGet using Trusted Publishing (OIDC).
+  #
+  # No long-lived API key is stored. GitHub issues a short-lived OIDC token,
+  # nuget.org validates it against the trusted publishing policy registered for
+  # this repository and workflow file, and returns a temporary API key that is
+  # valid for one hour and usable once.
+  #
+  # Requires:
+  #   - a trusted publishing policy on nuget.org pointing at
+  #     tgspn / kaniff / release.yml
+  #   - a NUGET_USER variable (your nuget.org profile name, not your e-mail)
+  # ---------------------------------------------------------------------------
+  nuget:
+    needs: [version, release]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # required to request the OIDC token
+    steps:
+      - name: Check for NuGet user
+        id: guard
+        env:
+          NUGET_USER: ${{ vars.NUGET_USER }}
+        shell: bash
+        run: |
+          if [ -z "$NUGET_USER" ]; then
+            echo "::warning::NUGET_USER variable is not set; skipping NuGet push."
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Download package
+        if: steps.guard.outputs.enabled == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          name: nupkg
+          path: nupkg
+
+      - name: Setup .NET
+        if: steps.guard.outputs.enabled == 'true'
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.x'
+
+      # Requested immediately before the push: the key expires after one hour.
+      - name: NuGet login (OIDC)
+        if: steps.guard.outputs.enabled == 'true'
+        id: login
+        uses: NuGet/login@v1
+        with:
+          user: ${{ vars.NUGET_USER }}
+
+      - name: Push to NuGet
+        if: steps.guard.outputs.enabled == 'true'
+        shell: bash
+        run: |
+          dotnet nuget push 'nupkg/*.nupkg' \
+            --api-key '${{ steps.login.outputs.NUGET_API_KEY }}' \
+            --source https://api.nuget.org/v3/index.json \
+            --skip-duplicate
+
+  # ---------------------------------------------------------------------------
+  # Publish the Scoop manifest to the bucket repository.
+  #
+  # A Scoop bucket IS a git repository that Scoop clones, so the manifest is a
+  # distribution artifact rather than source code. It is generated here from the
+  # real release hash and pushed to the bucket repo -- never committed back into
+  # this repository.
+  #
+  # Requires a SCOOP_BUCKET_TOKEN secret (a PAT with `contents: write` on the
+  # bucket repo); the job is skipped when the secret is absent.
+  # ---------------------------------------------------------------------------
+  scoop:
+    needs: [version, release]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check for token
+        id: guard
+        env:
+          TOKEN: ${{ secrets.SCOOP_BUCKET_TOKEN }}
+        shell: bash
+        run: |
+          if [ -z "$TOKEN" ]; then
+            echo "::warning::SCOOP_BUCKET_TOKEN is not set; skipping Scoop bucket update."
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout kaniff (for the update script)
+        if: steps.guard.outputs.enabled == 'true'
+        uses: actions/checkout@v4
+        with:
+          path: kaniff
+
+      - name: Checkout bucket
+        if: steps.guard.outputs.enabled == 'true'
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository_owner }}/scoop-kaniff
+          token: ${{ secrets.SCOOP_BUCKET_TOKEN }}
+          path: bucket
+
+      - name: Generate manifest
+        if: steps.guard.outputs.enabled == 'true'
+        shell: pwsh
+        run: |
+          ./kaniff/scripts/Update-Manifests.ps1 `
+            -Version '${{ needs.version.outputs.value }}' `
+            -Sha256 '${{ needs.release.outputs.win_sha256 }}' `
+            -Owner '${{ github.repository_owner }}'
+          New-Item -ItemType Directory -Force -Path bucket/bucket | Out-Null
+          Copy-Item kaniff/packaging/scoop/kaniff.json bucket/bucket/kaniff.json -Force
+
+      - name: Push to bucket
+        if: steps.guard.outputs.enabled == 'true'
+        working-directory: bucket
+        shell: bash
+        run: |
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "Bucket already up to date."
+            exit 0
+          fi
+          git config user.name  'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .
+          git commit -m "kaniff: update to ${{ needs.version.outputs.value }}"
+          git push
+
+  # ---------------------------------------------------------------------------
+  # Submit the release to microsoft/winget-pkgs as a pull request.
+  #
+  # Unlike NuGet, winget has no OIDC/trusted-publishing story: the action pushes
+  # a branch to *your fork* of microsoft/winget-pkgs, which is a different
+  # repository, so a real credential is unavoidable.
+  #
+  # Prerequisites:
+  #   - microsoft/winget-pkgs forked under this account (the action does not
+  #     create the fork; it expects it to already exist)
+  #   - Kaniff.Kaniff already present in winget-pkgs -- the first version has to
+  #     be submitted manually, the action only updates existing packages
+  #   - a WINGET_TOKEN secret: a *classic* PAT with `public_repo`
+  #     (fine-grained PATs are not supported, see winget-releaser#172)
+  # ---------------------------------------------------------------------------
+  winget:
+    needs: [version, release]
+    runs-on: ubuntu-latest
+    steps:
+      # The `secrets` context cannot be used in a job-level `if`, so guard here.
+      - name: Check for token
+        id: guard
+        env:
+          TOKEN: ${{ secrets.WINGET_TOKEN }}
+        shell: bash
+        run: |
+          if [ -z "$TOKEN" ]; then
+            echo "::warning::WINGET_TOKEN is not set; skipping winget submission."
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Pinned to a release tag rather than @main: this step receives a classic
+      # PAT, so it must not follow a mutable ref.
+      - name: Submit to winget-pkgs
+        if: steps.guard.outputs.enabled == 'true'
+        uses: vedantmgoyal9/winget-releaser@v2
+        with:
+          identifier: Kaniff.Kaniff
+          version: ${{ needs.version.outputs.value }}
+          # Explicit because github.ref_name is the branch, not a tag, when the
+          # workflow is started manually.
+          release-tag: v${{ needs.version.outputs.value }}
+          # Anchored on `kaniff-<version>-`: a bare `-win-x64\.zip$` also matches
+          # kaniff-desktop-<version>-win-x64.zip, and the two archives would be
+          # submitted as two installers for the same package.
+          installers-regex: '^kaniff-${{ needs.version.outputs.value }}-win-x64\.zip$'
+          token: ${{ secrets.WINGET_TOKEN }}

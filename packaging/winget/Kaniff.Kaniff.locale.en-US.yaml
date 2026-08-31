@@ -6,10 +6,11 @@ PublisherUrl: https://github.com/tgspn/kaniff
 PackageName: Kaniff
 PackageUrl: https://github.com/tgspn/kaniff
 License: MIT
-ShortDescription: A developer Swiss Army knife CLI: IP, Base64, JWT, hash, JSON and more.
+# Quoted: the colon after "CLI" would otherwise start a YAML mapping.
+ShortDescription: 'A developer Swiss Army knife CLI: IP, Base64, JWT, hash, JSON and more.'
 Tags:
   - cli
   - devtools
   - utilities
 ManifestType: defaultLocale
-ManifestVersion: 1.6.0
+ManifestVersion: 1.12.0

@@ -60,8 +60,18 @@ scoop install kaniff
 winget install Kaniff.Kaniff
 ```
 
-Or grab the standalone `kaniff-<version>-win-x64.zip` from the
-[latest release](https://github.com/tgspn/kaniff/releases/latest) — no runtime required.
+### Standalone downloads
+
+Every [release](https://github.com/tgspn/kaniff/releases/latest) ships self-contained
+builds — no .NET runtime required. Verify them against `SHA256SUMS.txt`.
+
+| Platform | CLI | Desktop |
+| --- | --- | --- |
+| Windows x64 | `kaniff-<v>-win-x64.zip` | `kaniff-desktop-<v>-win-x64.zip` |
+| Linux x64 | `kaniff-<v>-linux-x64.tar.gz` | `kaniff-desktop-<v>-linux-x64.tar.gz` |
+| Linux arm64 | `kaniff-<v>-linux-arm64.tar.gz` | `kaniff-desktop-<v>-linux-arm64.tar.gz` |
+| macOS Apple Silicon | `kaniff-<v>-osx-arm64.tar.gz` | `kaniff-desktop-<v>-osx-arm64.tar.gz` |
+| macOS Intel | `kaniff-<v>-osx-x64.tar.gz` | `kaniff-desktop-<v>-osx-x64.tar.gz` |
 
 ## Requirements
 
@@ -136,11 +146,74 @@ Quick version of adding a new tool:
 4. Add a `ViewModel` + `View` pair in the desktop app and list it in `MainViewModel`.
 5. Add tests in `tests/Kaniff.Tests` and a row to the tools table above.
 
+## Releasing
+
+Everything is automated. Push a tag and the
+[release workflow](.github/workflows/release.yml) will:
+
+1. Build the CLI and desktop app for 5 platforms (self-contained, single file).
+2. Pack the CLI as a `dotnet tool` and push it to NuGet.
+3. Publish a GitHub release with all archives and a `SHA256SUMS.txt`.
+4. Generate the Scoop manifest from the real hash and push it to the bucket repo.
+5. Open a pull request against `microsoft/winget-pkgs`.
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+### Release configuration
+
+Steps 2, 4 and 5 are skipped with a warning when their configuration is missing,
+so the release still succeeds without them.
+
+| Name | Kind | Used by | How to set it up |
+| --- | --- | --- | --- |
+| `NUGET_USER` | variable | step 2 | Your nuget.org profile name (not your e-mail, and not the package name). Not a secret. |
+| `SCOOP_BUCKET_TOKEN` | secret | step 4 | A fine-grained PAT for `tgspn/scoop-kaniff` only, with **Contents: Read and write** |
+| `WINGET_TOKEN` | secret | step 5 | A **classic** PAT with the `public_repo` scope. Fine-grained PATs are not supported by the action. |
+
+NuGet publishing uses
+[Trusted Publishing](https://learn.microsoft.com/nuget/nuget-org/trusted-publishing)
+rather than a stored API key: GitHub issues a short-lived OIDC token, nuget.org
+validates it against a policy registered for this repository and workflow, and
+returns a temporary key valid for one hour. Nothing long-lived is stored, so
+there is no key to rotate or leak. Register the policy under
+**nuget.org → your username → Trusted Publishing** with:
+
+| Field | Value |
+| --- | --- |
+| Repository Owner | `tgspn` |
+| Repository | `kaniff` |
+| Workflow File | `release.yml` |
+| Environment | *(leave empty)* |
+
+> A new policy for a repository that has never published is *temporarily active*
+> for 7 days. Publish within that window or restart it, otherwise it goes
+> inactive.
+
+The built-in `GITHUB_TOKEN` cannot be used for steps 4 and 5 because it is
+scoped to this repository and cannot push to another repo or create forks.
+Unlike NuGet, winget has no trusted-publishing equivalent yet, so step 5 still
+needs a real credential.
+
+Step 5 additionally requires, one time only:
+
+- `microsoft/winget-pkgs` **forked under this account** — the action pushes to
+  the fork and does not create it for you.
+- **The first version submitted by hand.** The action updates an existing
+  package; it cannot introduce `Kaniff.Kaniff` to winget-pkgs. Use
+  [Komac](https://github.com/russellbanks/Komac) or `wingetcreate` for v0.1.0,
+  after which every later release is automatic.
+
+See [packaging/README.md](packaging/README.md) for why the manifests live
+outside this repository.
+
 ## Roadmap
 
 - More tools (hexdump, cron expression explainer, diff viewer, lorem ipsum)
-- Linux/macOS builds of the desktop app
 - Tool search / command palette in the desktop app
+- Homebrew formula for macOS
 
 ## Security
 
