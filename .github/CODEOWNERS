@@ -1,7 +1,9 @@
-# Default owner for everything in the repository.
+# Default owner for everything in the repository
+
 * @tgspn
 
-# Release and packaging automation deserves extra scrutiny.
+# Release and packaging automation deserves extra scrutiny
+
 /.github/workflows/ @tgspn
 /scripts/           @tgspn
 /packaging/         @tgspn
