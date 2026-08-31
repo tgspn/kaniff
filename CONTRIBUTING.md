@@ -34,7 +34,8 @@ dotnet run --project src/Kaniff.Desktop
 | `src/Kaniff.Cli` | Command-line front end (`kaniff`). |
 | `src/Kaniff.Desktop` | Avalonia desktop front end. |
 | `tests/Kaniff.Tests` | xUnit tests for `Kaniff.Core`. |
-| `packaging/` | Scoop and winget manifests. |
+| `packaging/` | Scoop and winget manifests (updated automatically on release). |
+| `scripts/` | Release helper scripts. |
 
 ## Adding a new tool
 
@@ -58,11 +59,24 @@ dotnet run --project src/Kaniff.Desktop
 
 ## Pull requests
 
+`main` is protected: **every change goes through a pull request**, including
+changes from the maintainers. Direct pushes are rejected.
+
 - Create a branch from `main`.
 - Keep pull requests focused on a single change.
 - Describe what changed and why. Include CLI output or a screenshot when the
   change is user-visible.
-- CI must be green before review.
+- The `build` check must pass, your branch must be up to date with `main`, and
+  all review conversations must be resolved before merging.
+- History is linear: merges are done by **squash** or **rebase**, so keep your
+  commit messages meaningful.
+
+```bash
+git switch -c my-change
+# ... work ...
+git push -u origin my-change
+gh pr create --fill
+```
 
 ## Reporting bugs
 
