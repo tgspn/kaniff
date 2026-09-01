@@ -1,0 +1,58 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Kaniff.Desktop.Views.SplashWindow"
+        Width="440" Height="260"
+        WindowDecorations="None"
+        WindowStartupLocation="CenterScreen"
+        Background="Transparent"
+        TransparencyLevelHint="Transparent"
+        ShowInTaskbar="False"
+        Topmost="True"
+        CanResize="False">
+
+    <!-- Drawn in XAML rather than shipped as a bitmap: it stays sharp at any DPI
+         and costs nothing to load, which matters for a window whose whole job is
+         to appear quickly. -->
+    <Border CornerRadius="12" ClipToBounds="True">
+        <Border.Background>
+            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                <GradientStop Color="#232331" Offset="0" />
+                <GradientStop Color="#15151C" Offset="1" />
+            </LinearGradientBrush>
+        </Border.Background>
+
+        <Grid RowDefinitions="*,Auto">
+            <StackPanel Grid.Row="0"
+                        VerticalAlignment="Center"
+                        HorizontalAlignment="Center"
+                        Spacing="6">
+                <TextBlock Text="🔪"
+                           FontSize="46"
+                           HorizontalAlignment="Center" />
+                <TextBlock Text="Kaniff"
+                           FontSize="34" FontWeight="Bold"
+                           Foreground="White"
+                           HorizontalAlignment="Center" />
+                <TextBlock Text="Developer Swiss Army Knife"
+                           FontSize="12"
+                           Foreground="#9A9AB0"
+                           HorizontalAlignment="Center" />
+                <TextBlock Name="VersionText"
+                           FontSize="11"
+                           Foreground="#6A6A80"
+                           Margin="0,6,0,0"
+                           HorizontalAlignment="Center" />
+            </StackPanel>
+
+            <!-- Indeterminate on purpose: the startup cost is runtime and UI
+                 initialisation, which reports no progress, and a fake percentage
+                 would be a lie. -->
+            <ProgressBar Grid.Row="1"
+                         IsIndeterminate="True"
+                         Height="3"
+                         Foreground="#E0574B"
+                         Background="#00000000"
+                         BorderThickness="0" />
+        </Grid>
+    </Border>
+</Window>

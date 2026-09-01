@@ -7,6 +7,28 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
 
+  <!--
+    Startup cost, not download size, is what users feel on every launch.
+
+    Without ReadyToRun the runtime JIT-compiles Avalonia's initialisation path
+    on every start. Precompiling it roughly halves the time to first window.
+    Measured on win-x64, self-contained single file, time until the first
+    window is visible (best of 3 runs):
+
+      compressed, no R2R    1408 ms    exe  40.3 MB
+      compressed, R2R        753 ms    exe  54.9 MB
+
+    Compression stays on: dropping it would save another ~220 ms but push the
+    executable to 123 MB, and R2R already recovers most of that time.
+
+    Only applied when publishing for a specific runtime. R2R needs to emit
+    native code, so it requires a RID; `dotnet pack` and plain builds do not
+    set one, and the property would be meaningless there.
+  -->
+  <PropertyGroup Condition="'$(RuntimeIdentifier)' != ''">
+    <PublishReadyToRun>true</PublishReadyToRun>
+  </PropertyGroup>
+
   <ItemGroup>
     <Folder Include="Models\" />
     <AvaloniaResource Include="Assets\**" />
