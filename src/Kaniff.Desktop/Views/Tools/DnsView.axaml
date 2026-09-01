@@ -1,0 +1,72 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Kaniff.Desktop.ViewModels.Tools"
+             xmlns:c="using:Kaniff.Desktop.Controls"
+             x:Class="Kaniff.Desktop.Views.Tools.DnsView"
+             x:DataType="vm:DnsViewModel"
+             x:CompileBindings="True">
+    <UserControl.Styles>
+        <!-- Failures are tinted rather than prefixed with "Error:", so the status
+             line stays short enough to read at a glance. -->
+        <Style Selector="TextBlock.status.error">
+            <Setter Property="Foreground" Value="#E0574B" />
+            <Setter Property="Opacity" Value="1" />
+        </Style>
+    </UserControl.Styles>
+
+    <StackPanel Spacing="12">
+        <TextBlock Text="{Binding Title}" FontSize="22" FontWeight="Bold" />
+        <TextBlock Text="{Binding Description}" Opacity="0.7" TextWrapping="Wrap" />
+
+        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+            <!-- Enter submits, because typing a host and reaching for the mouse
+                 is not how anyone uses a lookup box. -->
+            <TextBox Text="{Binding Query}"
+                     PlaceholderText="github.com or 8.8.8.8"
+                     FontFamily="Consolas,monospace">
+                <TextBox.KeyBindings>
+                    <KeyBinding Gesture="Enter" Command="{Binding LookupCommand}" />
+                </TextBox.KeyBindings>
+            </TextBox>
+            <Button Grid.Column="1"
+                    Content="Look up"
+                    Command="{Binding LookupCommand}"
+                    IsDefault="True" />
+        </Grid>
+
+        <Border Background="#2A2A33" CornerRadius="8" Padding="16"
+                IsVisible="{Binding Results.Count}">
+            <StackPanel Spacing="8">
+                <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Text="Results" Opacity="0.6" FontSize="12"
+                               VerticalAlignment="Center" />
+                    <c:CopyButton Grid.Column="1" Text="{Binding AllAddresses}" />
+                </Grid>
+                <ItemsControl ItemsSource="{Binding Results}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:DnsResultItem">
+                            <Grid ColumnDefinitions="60,*,Auto" Margin="0,2">
+                                <TextBlock Text="{Binding Kind}"
+                                           Opacity="0.5" FontSize="12"
+                                           VerticalAlignment="Center" />
+                                <SelectableTextBlock Grid.Column="1"
+                                                     Text="{Binding Value}"
+                                                     FontFamily="Consolas,monospace"
+                                                     TextWrapping="Wrap"
+                                                     VerticalAlignment="Center" />
+                                <c:CopyButton Grid.Column="2" Text="{Binding Value}" />
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </Border>
+
+        <TextBlock Text="{Binding Status}"
+                   Classes="status"
+                   Classes.error="{Binding HasError}"
+                   TextWrapping="Wrap"
+                   FontSize="12"
+                   Opacity="0.7" />
+    </StackPanel>
+</UserControl>

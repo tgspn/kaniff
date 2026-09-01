@@ -32,11 +32,19 @@ vulnerability:
   make trust decisions.
 - **MD5 and SHA-1 are provided for interoperability** with legacy systems. They
   are not considered secure for cryptographic purposes.
-- **All tools run offline**, except the public IP lookup, which contacts
-  `ifconfig.me`, `ipify.org`, `icanhazip.com` and `ifconfig.co` (including their
-  IPv4- and IPv6-only hostnames, queried separately to report both families).
-  Those requests send no user input beyond what any HTTP request reveals: your
-  IP address and a `User-Agent`. No other tool transmits data anywhere.
+- **All tools run offline**, except the three network tools:
+  - The public IP lookup contacts `ifconfig.me`, `ipify.org`, `icanhazip.com`
+    and `ifconfig.co` (including their IPv4- and IPv6-only hostnames, queried
+    separately to report both families). Those requests send no user input
+    beyond what any HTTP request reveals: your IP address and a `User-Agent`.
+  - The DNS lookup resolves the name you type, using your system's configured
+    resolver. No third-party DNS server is contacted directly.
+  - The port check opens a TCP connection to the host and port you type, then
+    closes it immediately. It sends no payload and reads nothing back; only the
+    connection outcome is reported.
+
+  Both the DNS lookup and the port check contact only the host you ask for, and
+  neither sends any other data. No other tool transmits data anywhere.
 
 Issues we are interested in include remote code execution, arbitrary file
 write/read via crafted input, and unintended network transmission of user data.

@@ -1,4 +1,4 @@
-﻿using System.Text;
+using System.Text;
 using Kaniff.Core;
 using Kaniff.Core.Tools;
 
@@ -25,6 +25,8 @@ internal static class KaniffCli
             {
                 "list" => List(),
                 "ip" => await IpAsync(rest),
+            "dns" or "nslookup" => await DnsAsync(rest),
+            "port" or "telnet" => await PortAsync(rest),
                 "base64" or "b64" => Base64(rest),
                 "url" => Url(rest),
                 "jwt" => Jwt(rest),
@@ -50,7 +52,7 @@ internal static class KaniffCli
     private static int List()
     {
         foreach (var tool in ToolCatalog.All)
-            Console.WriteLine($"{tool.Id,-8} {tool.Name} — {tool.Description}");
+            Console.WriteLine($"{tool.Id,-8} {tool.Name} � {tool.Description}");
         return 0;
     }
 
@@ -70,7 +72,7 @@ internal static class KaniffCli
                 var pair = await tool.GetPublicIpsAsync();
                 if (pair.IsEmpty)
                 {
-                    Console.Error.WriteLine("Public : unavailable — no address could be resolved.");
+                    Console.Error.WriteLine("Public : unavailable � no address could be resolved.");
                 }
                 else
                 {
@@ -82,7 +84,7 @@ internal static class KaniffCli
             }
             catch (Exception ex)
             {
-                Console.Error.WriteLine($"Public : unavailable — {ex.Message}");
+                Console.Error.WriteLine($"Public : unavailable � {ex.Message}");
             }
         }
 
@@ -96,6 +98,96 @@ internal static class KaniffCli
         }
 
         return 0;
+    }
+    private static async Task<int> DnsAsync(string[] args)
+    {
+        var query = ReadInput(args.Where(a => !a.StartsWith('-')));
+        if (string.IsNullOrEmpty(query))
+            return Fail("usage: kaniff dns <host|ip>");
+
+        var tool = new DnsTool();
+
+        try
+        {
+            var result = await tool.LookupAsync(query);
+
+            if (result.IsReverse)
+            {
+                if (result.CanonicalName is null)
+                {
+                    Console.Error.WriteLine($"no PTR record for {result.Query}");
+                    return 2;
+                }
+
+                Console.WriteLine($"Name   : {result.CanonicalName}");
+            }
+            else
+            {
+                if (result.Records.Count == 0)
+                {
+                    Console.Error.WriteLine($"no addresses found for {result.Query}");
+                    return 2;
+                }
+
+                foreach (var record in result.Records)
+                    Console.WriteLine($"{record.Kind,-6} : {record.Address}");
+            }
+
+            Console.WriteLine($"         ({result.ElapsedMilliseconds} ms)");
+            return 0;
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or ArgumentException)
+        {
+            return Fail(ex.Message);
+        }
+    }
+
+    private static async Task<int> PortAsync(string[] args)
+    {
+        var operands = args.Where(a => !a.StartsWith('-')).ToArray();
+        if (operands.Length < 2)
+            return Fail("usage: kaniff port <host> <port> [--timeout <seconds>]");
+
+        if (!int.TryParse(operands[1], out var port))
+            return Fail($"'{operands[1]}' is not a valid port number");
+
+        var timeout = PortTool.DefaultTimeout;
+        var flag = Array.FindIndex(args, a => a is "--timeout" or "-t");
+        if (flag >= 0)
+        {
+            if (flag + 1 >= args.Length || !double.TryParse(args[flag + 1], out var seconds) || seconds <= 0)
+                return Fail("--timeout requires a positive number of seconds");
+            timeout = TimeSpan.FromSeconds(seconds);
+        }
+
+        var tool = new PortTool();
+
+        try
+        {
+            var result = await tool.CheckAsync(operands[0], port, timeout);
+            var service = result.ServiceName is null ? string.Empty : $" [{result.ServiceName}]";
+
+            var status = result.Status switch
+            {
+                PortStatus.Open => "open",
+                PortStatus.Closed => "closed",
+                PortStatus.TimedOut => "timed out",
+                _ => "unreachable",
+            };
+
+            Console.WriteLine($"{result.Host}:{result.Port}{service} - {status}");
+            Console.WriteLine($"{result.Message} ({result.ElapsedMilliseconds} ms)");
+
+            // A closed port is a successful check but a negative answer, so it
+            // gets its own exit code for scripts that branch on reachability.
+            return result.IsOpen ? 0 : 2;
+        }
+        catch (ArgumentException ex)
+        {
+            // ArgumentException.Message appends "(Parameter 'x')", which is
+            // internal detail the person at the prompt does not need.
+            return Fail(ex.Message.Split(" (Parameter")[0]);
+        }
     }
 
     private static int Base64(string[] args)
@@ -346,13 +438,15 @@ internal static class KaniffCli
     private static void PrintHelp()
     {
         Console.WriteLine("""
-        Kaniff — your developer Swiss Army knife.
+        Kaniff � your developer Swiss Army knife.
 
         Usage:
           kaniff <command> [options]
 
         Commands:
           ip [--local] [--public]         Show public and/or local IP addresses
+          dns <host|ip>                   Resolve a host to addresses, or an IP to a name
+          port <host> <port> [-t secs]    Check whether a TCP port is open
           base64 encode <text> [-u]       Encode text to Base64 (-u = URL-safe)
           base64 decode <text>            Decode Base64 to text
           url encode|decode <text>        Percent-encode/decode for URLs
