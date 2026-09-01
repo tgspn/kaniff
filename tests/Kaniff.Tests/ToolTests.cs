@@ -1,3 +1,5 @@
+using System.Net;
+using System.Net.Sockets;
 using Kaniff.Core.Tools;
 using Xunit;
 
@@ -142,5 +144,126 @@ public class ToolTests
         Assert.True(new PublicIpPair(null, null).IsEmpty);
         Assert.False(new PublicIpPair(new PublicIpResult("203.0.113.1", "test"), null).IsEmpty);
         Assert.False(new PublicIpPair(null, new PublicIpResult("2001:db8::1", "test")).IsEmpty);
+    }
+
+    // The DNS and port tests below deliberately stay on loopback so the suite
+    // never depends on an internet connection or on someone else's name server.
+
+    [Fact]
+    public async Task Dns_ResolvesLocalhost()
+    {
+        var result = await new DnsTool().LookupAsync("localhost");
+
+        Assert.False(result.IsReverse);
+        Assert.NotEmpty(result.Records);
+        Assert.All(result.Records, r => Assert.True(IPAddress.TryParse(r.Address, out _)));
+    }
+
+    [Fact]
+    public async Task Dns_TreatsAddressAsReverseLookup()
+    {
+        var result = await new DnsTool().LookupAsync("127.0.0.1");
+
+        Assert.True(result.IsReverse);
+        Assert.Empty(result.Records);
+    }
+
+    [Fact]
+    public async Task Dns_StripsSchemeAndBrackets()
+    {
+        // A pasted URL and a bracketed literal are both things people type into
+        // a lookup box, and neither should reach the resolver verbatim.
+        Assert.Equal("localhost", (await new DnsTool().LookupAsync("http://localhost/path")).Query);
+        Assert.True((await new DnsTool().LookupAsync("[::1]")).IsReverse);
+    }
+
+    [Fact]
+    public async Task Dns_RejectsEmptyQuery()
+    {
+        await Assert.ThrowsAsync<ArgumentException>(() => new DnsTool().LookupAsync("   "));
+    }
+
+    [Fact]
+    public async Task Dns_ReportsUnknownHost()
+    {
+        // .invalid is reserved by RFC 2606 and must never resolve.
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => new DnsTool().LookupAsync("kaniff-does-not-exist.invalid"));
+
+        Assert.Contains("could not be found", ex.Message);
+    }
+
+    [Fact]
+    public void DnsResult_SplitsRecordsByFamily()
+    {
+        var result = new DnsLookupResult(
+            "example",
+            "example",
+            [new DnsRecord("203.0.113.1", true), new DnsRecord("2001:db8::1", false)],
+            1,
+            false);
+
+        Assert.Equal("A", Assert.Single(result.IPv4).Kind);
+        Assert.Equal("AAAA", Assert.Single(result.IPv6).Kind);
+    }
+
+    [Fact]
+    public async Task Port_DetectsListeningPort()
+    {
+        var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+
+        try
+        {
+            var port = ((IPEndPoint)listener.LocalEndpoint).Port;
+            var result = await new PortTool().CheckAsync("127.0.0.1", port);
+
+            Assert.True(result.IsOpen);
+            Assert.Equal(PortStatus.Open, result.Status);
+        }
+        finally
+        {
+            listener.Stop();
+        }
+    }
+
+    [Fact]
+    public async Task Port_DetectsClosedPort()
+    {
+        // Bind and release to obtain a port number that is very unlikely to be
+        // taken again by the time the check runs.
+        var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        var port = ((IPEndPoint)listener.LocalEndpoint).Port;
+        listener.Stop();
+
+        var result = await new PortTool().CheckAsync("127.0.0.1", port, TimeSpan.FromSeconds(5));
+
+        Assert.False(result.IsOpen);
+        Assert.Equal(PortStatus.Closed, result.Status);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(65536)]
+    [InlineData(-1)]
+    public async Task Port_RejectsOutOfRangePort(int port)
+    {
+        await Assert.ThrowsAsync<ArgumentException>(
+            () => new PortTool().CheckAsync("127.0.0.1", port));
+    }
+
+    [Fact]
+    public async Task Port_RejectsEmptyHost()
+    {
+        await Assert.ThrowsAsync<ArgumentException>(() => new PortTool().CheckAsync(" ", 80));
+    }
+
+    [Fact]
+    public void Port_NamesWellKnownServices()
+    {
+        Assert.Equal("HTTPS", PortTool.DescribePort(443));
+        Assert.Equal("PostgreSQL", PortTool.DescribePort(5432));
+        Assert.Null(PortTool.DescribePort(45678));
     }
 }

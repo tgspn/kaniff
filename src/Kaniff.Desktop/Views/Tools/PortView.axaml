@@ -1,0 +1,63 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Kaniff.Desktop.ViewModels.Tools"
+             x:Class="Kaniff.Desktop.Views.Tools.PortView"
+             x:DataType="vm:PortViewModel"
+             x:CompileBindings="True">
+    <UserControl.Styles>
+        <!-- Open is the answer people are hoping for, so it gets the positive
+             colour; everything else shares the same warning tint. -->
+        <Style Selector="TextBlock.verdict">
+            <Setter Property="Foreground" Value="#E0574B" />
+        </Style>
+        <Style Selector="TextBlock.verdict.open">
+            <Setter Property="Foreground" Value="#4BC08A" />
+        </Style>
+    </UserControl.Styles>
+
+    <StackPanel Spacing="12">
+        <TextBlock Text="{Binding Title}" FontSize="22" FontWeight="Bold" />
+        <TextBlock Text="{Binding Description}" Opacity="0.7" TextWrapping="Wrap" />
+
+        <Grid ColumnDefinitions="*,120,Auto" ColumnSpacing="8">
+            <TextBox Text="{Binding Host}"
+                     PlaceholderText="host or IP"
+                     FontFamily="Consolas,monospace">
+                <TextBox.KeyBindings>
+                    <KeyBinding Gesture="Enter" Command="{Binding CheckCommand}" />
+                </TextBox.KeyBindings>
+            </TextBox>
+            <TextBox Grid.Column="1"
+                     Text="{Binding Port}"
+                     PlaceholderText="port"
+                     FontFamily="Consolas,monospace">
+                <TextBox.KeyBindings>
+                    <KeyBinding Gesture="Enter" Command="{Binding CheckCommand}" />
+                </TextBox.KeyBindings>
+            </TextBox>
+            <Button Grid.Column="2"
+                    Content="Check"
+                    Command="{Binding CheckCommand}"
+                    IsDefault="True" />
+        </Grid>
+
+        <Border Background="#2A2A33" CornerRadius="8" Padding="16"
+                IsVisible="{Binding HasResult}">
+            <StackPanel Spacing="6">
+                <TextBlock Text="{Binding Status}"
+                           Classes="verdict"
+                           Classes.open="{Binding IsOpen}"
+                           FontSize="20" FontWeight="Bold" />
+                <TextBlock Text="{Binding Detail}"
+                           Opacity="0.7" FontSize="12"
+                           TextWrapping="Wrap" />
+            </StackPanel>
+        </Border>
+
+        <!-- A check can sit for the full timeout, so the wait needs to be visible. -->
+        <ProgressBar IsIndeterminate="True"
+                     Height="3"
+                     Foreground="#E0574B"
+                     IsVisible="{Binding IsBusy}" />
+    </StackPanel>
+</UserControl>

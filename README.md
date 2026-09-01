@@ -16,6 +16,8 @@ Every day you need a one-off tool: decode a Base64 string, check your public IP,
 | Tool | CLI verb | What it does |
 | ------ | ---------- | -------------- |
 | My IP | `ip` | Public IPv4 and IPv6 (ifconfig.me + fallbacks) and local addresses |
+| DNS Lookup | `dns` | Resolve a host to addresses, or an IP back to a name |
+| Port Check | `port` | Test whether a TCP port is open (what `telnet host port` is for) |
 | Base64 | `base64` | Encode/decode text (standard or URL-safe) |
 | URL Encode | `url` | Percent-encode/decode text for URLs |
 | JWT | `jwt` | Decode a token's header and payload (no verification) |
@@ -91,6 +93,10 @@ Examples:
 ```bash
 kaniff ip                          # public + local IPs
 kaniff ip --local                  # local only
+kaniff dns github.com              # A/AAAA records
+kaniff dns 8.8.8.8                 # reverse lookup
+kaniff port github.com 443         # is the port open?
+kaniff port db.internal 5432 -t 2  # with a 2-second timeout
 kaniff base64 encode "hello" -u    # URL-safe Base64
 kaniff base64 decode aGVsbG8=
 kaniff url encode "a b&c=1"

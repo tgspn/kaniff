@@ -12,6 +12,8 @@ public static class ToolCatalog
     public static IReadOnlyList<ITool> All { get; } =
     [
         new IpTool(),
+        new DnsTool(),
+        new PortTool(),
         new Base64Tool(),
         new UrlEncodeTool(),
         new JwtTool(),

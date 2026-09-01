@@ -11,6 +11,8 @@ public partial class MainViewModel : ViewModelBase
         Tools =
         [
             new IpViewModel(),
+            new DnsViewModel(),
+            new PortViewModel(),
             new Base64ViewModel(),
             new UrlViewModel(),
             new JwtViewModel(),
