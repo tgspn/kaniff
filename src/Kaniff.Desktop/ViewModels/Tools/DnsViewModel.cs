@@ -34,6 +34,12 @@ public partial class DnsViewModel : ToolPageViewModel
     /// <summary>Every address found, one per line, for the "copy all" button.</summary>
     public string AllAddresses => string.Join(Environment.NewLine, Results.Select(r => r.Value));
 
+    /// <summary>
+    /// A single result already has its own copy button on the row, so the "copy all"
+    /// button would duplicate it. Only offer it when it actually does something more.
+    /// </summary>
+    public bool ShowCopyAll => Results.Count > 1;
+
     private bool CanLookup => !IsBusy && !string.IsNullOrWhiteSpace(Query);
 
     [RelayCommand(CanExecute = nameof(CanLookup))]
@@ -84,6 +90,7 @@ public partial class DnsViewModel : ToolPageViewModel
         {
             IsBusy = false;
             OnPropertyChanged(nameof(AllAddresses));
+            OnPropertyChanged(nameof(ShowCopyAll));
         }
     }
 }

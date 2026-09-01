@@ -40,7 +40,8 @@
                 <Grid ColumnDefinitions="*,Auto">
                     <TextBlock Text="Results" Opacity="0.6" FontSize="12"
                                VerticalAlignment="Center" />
-                    <c:CopyButton Grid.Column="1" Text="{Binding AllAddresses}" />
+                    <c:CopyButton Grid.Column="1" Text="{Binding AllAddresses}"
+                                  IsVisible="{Binding ShowCopyAll}" />
                 </Grid>
                 <ItemsControl ItemsSource="{Binding Results}">
                     <ItemsControl.ItemTemplate>
