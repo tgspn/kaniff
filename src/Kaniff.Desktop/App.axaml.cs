@@ -11,10 +11,16 @@ namespace Kaniff.Desktop;
 public partial class App : Application
 {
     /// <summary>
-    /// Minimum time the splash stays up. Startup is fast on a warm run, and a
-    /// window that flashes for 200 ms reads as a glitch rather than as branding.
+    /// Minimum time the splash stays up, so it does not flash past as a glitch
+    /// on a warm start.
+    /// <para>
+    /// Kept deliberately short. With ReadyToRun the main window is ready about
+    /// 400 ms after the splash appears, so anything larger stops covering real
+    /// work and simply delays the app: a 900 ms floor pushed the main window
+    /// from 1282 ms out to 1704 ms.
+    /// </para>
     /// </summary>
-    private static readonly TimeSpan MinimumSplashDuration = TimeSpan.FromMilliseconds(900);
+    private static readonly TimeSpan MinimumSplashDuration = TimeSpan.FromMilliseconds(250);
 
     public override void Initialize()
     {
