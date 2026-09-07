@@ -124,7 +124,7 @@ jobs:
           tar -czf "dist/kaniff-desktop-$v-$rid.tar.gz" -C "publish/desktop/$rid" .
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: kaniff-${{ matrix.rid }}
           path: dist/*
@@ -151,7 +151,7 @@ jobs:
           -p:Version=${{ needs.version.outputs.value }}
 
       - name: Upload package
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: nupkg
           path: artifacts/nupkg/*.nupkg
