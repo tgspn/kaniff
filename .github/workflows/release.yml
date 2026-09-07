@@ -194,7 +194,7 @@ jobs:
           echo "win-x64 SHA-256: $win_sha256"
 
       - name: Publish release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           # Explicit because the action defaults to github.ref, which is the
           # branch rather than a tag when the workflow is started manually.
